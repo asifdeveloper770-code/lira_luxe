@@ -15,9 +15,6 @@ import { useState } from "react";
 // const navigate = useNavigate();
 
 
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-);
 
 export default function CartPage() {
   const {
@@ -42,11 +39,7 @@ export default function CartPage() {
     }
 
     try {
-      const stripe = await stripePromise;
 
-      if (!stripe) {
-        throw new Error("Stripe failed to load.");
-      }
 
       const response = await fetch("/api/create-checkout-session", {
         method: "POST",
@@ -62,14 +55,6 @@ export default function CartPage() {
 
       const session = await response.json();
 
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: session.id,
-      });
-
-      if (error) {
-        console.error(error);
-        alert(error.message);
-      }
     } catch (err) {
       console.error(err);
       alert("Checkout failed.");
