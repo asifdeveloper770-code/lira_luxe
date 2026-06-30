@@ -9,7 +9,7 @@ import {
 import { SectionLabel } from "@/components/Reveal";
 import { useCart } from "@/components/CartContext";
 import { useNavigate } from "react-router-dom";
-import { loadStripe } from "@stripe/stripe-js";
+// import { loadStripe } from "@stripe/stripe-js";
 import { useState } from "react";
 
 // const navigate = useNavigate();
