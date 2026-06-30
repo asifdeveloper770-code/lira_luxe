@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
 import { Logo } from "./Logo";
+import { useCart } from "@/components/CartContext";
 
 const nav = [
   { label: "Shop", to: "/shop" },
@@ -17,6 +18,10 @@ const nav = [
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { cart } = useCart();
+
+  // Total quantity of all items
+  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -60,9 +65,11 @@ export function Header() {
             </Link>
             <Link to="/cart" aria-label="Cart" className="relative p-2 -m-2 text-foreground/80 hover:text-gold transition">
               <ShoppingBag size={18} strokeWidth={1.4} />
-              <span className="absolute top-0 right-0 text-[9px] text-ink bg-gold rounded-full w-4 h-4 flex items-center justify-center font-medium">
-                2
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 text-[9px] text-ink bg-gold rounded-full w-4 h-4 flex items-center justify-center font-medium">
+                  {cartCount}
+                </span>
+              )}
             </Link>
             <button
               aria-label="Menu"
