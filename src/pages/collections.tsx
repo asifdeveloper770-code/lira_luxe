@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { collections } from "@/lib/products";
 
 import ProductCard from "../components/ProductCard";
 import { Reveal, SectionLabel } from "../components/Reveal";
@@ -98,33 +99,35 @@ export default function CollectionPage() {
 
   return (
     <div>
-      <section className="relative h-[60vh] min-h-[420px] overflow-hidden">
+      <section className="relative w-full overflow-hidden bg-black flex flex-col justify-center items-center">
 
+        {/* 1. Background Image - Set to object-contain so the FULL image is visible */}
         {collection.image && (
           <img
             src={collection.image}
             alt={collection.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="w-full max-h-[70vh] object-contain z-0 block mx-auto"
           />
         )}
 
-        <div className="absolute inset-0 bg-black/60" />
+        {/* 2. Overlap Overlay Content Wrapper */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center" />
 
-        <div className="relative h-full max-w-7xl mx-auto px-6 flex flex-col items-center justify-center text-center">
-
+        {/* 3. Foreground Text Layer */}
+        <div className="absolute inset-0 z-20 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center text-center">
           <SectionLabel>
             Collection
           </SectionLabel>
 
-          <h1 className="mt-6 text-6xl font-bold text-white">
+          <h1 className="mt-6 text-4xl sm:text-6xl font-bold text-white font-serif tracking-tight">
             {collection.name}
           </h1>
 
-          <p className="mt-4 text-white/80 max-w-xl">
+          <p className="mt-4 text-white/90 max-w-xl text-sm sm:text-base font-light tracking-wide leading-relaxed">
             {collection.tagline}
           </p>
-
         </div>
+
       </section>
 
       <section className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10">

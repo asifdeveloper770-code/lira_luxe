@@ -6,7 +6,10 @@ import QuickViewModal from "./QuickViewModal";
 export type Product = {
   id: string;
   name: string;
-  category: string;
+  category_id: string;
+  categories: {
+    name: string;
+  };
   price: number;
   image: string;
   tag?: string;
@@ -54,25 +57,25 @@ export default function ProductCard({
       </div>
 
       <div className="pt-5 text-center">
-        <p className="text-[10px] tracking-[0.32em] uppercase text-gold/80">
-          {product.category}
+        <p className="text-[10px] tracking-[0.32em]  uppercase text-gold/80">
+          {product.categories.name}
         </p>
 
         <h3 className="mt-2 font-serif text-xl md:text-2xl text-foreground group-hover:text-gold transition-colors">
           {product.name}
         </h3>
 
-        <p className="mt-1.5 text-sm text-foreground/70">
+        <p className="mt-1.5 text-sm text-foreground/70 group-hover:text-foreground">
           ${product.price.toLocaleString()}
         </p>
       </div>
       <QuickViewModal
-    product={product}
-    open={open}
-    onClose={() => setOpen(false)}
-/>
+        product={product}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
     </div>
-    
+
 
   );
 

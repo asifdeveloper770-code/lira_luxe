@@ -90,7 +90,7 @@ export default function ShopPage() {
       </section>
 
       {/* FILTERS */}
-      <section className="container-luxe mt-16 flex flex-wrap gap-3 justify-center">
+      <section className="container-luxe mt-16 flex flex-wrap gap-2 justify-center">
         <button
           onClick={() => setActiveFilter("All")}
           className={`btn-ghost-gold !py-2.5 !px-5 text-[10px] ${activeFilter === "All"

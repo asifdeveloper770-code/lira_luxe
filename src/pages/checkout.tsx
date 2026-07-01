@@ -162,11 +162,11 @@ export default function CheckoutPage() {
                                 key={item.id}
                                 className="flex justify-between"
                             >
-                                <dt className="text-foreground/70 text-md ">
-                                    {item.name} × {item.quantity}
+                                <dt className="text-foreground/70 text-md font-serif ">
+                                    {item.name} × <span className="gradient-gold-text">{item.quantity}</span>
                                 </dt>
 
-                                <dd className="text-gold">
+                                <dd className="gradient-gold-text">
                                     $
                                     {(item.price * item.quantity).toFixed(2)}
                                 </dd>

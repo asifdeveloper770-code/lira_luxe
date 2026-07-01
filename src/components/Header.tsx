@@ -9,7 +9,7 @@ const nav = [
   { label: "Earrings", to: "/collections/earrings" },
   { label: "Necklaces", to: "/collections/necklaces" },
   { label: "Bracelets", to: "/collections/bracelets" },
-  { label: "Rings", to: "/collections/rings" },
+  { label: "Rings", to: "/collections/ring" },
   { label: "Belts", to: "/collections/belts" },
   { label: "Journal", to: "/about" },
   { label: "Contact", to: "/contact" },
