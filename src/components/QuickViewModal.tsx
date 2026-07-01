@@ -52,7 +52,7 @@ export default function QuickViewModal({
                         />
                         <div className="absolute top-4 left-4">
                             <span className="backdrop-blur-md bg-black/40 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
-                                {product.categories.name}
+                                {product.categories?.name ?? "Uncategorized"}
                             </span>
                         </div>
                     </div>

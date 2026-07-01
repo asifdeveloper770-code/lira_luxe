@@ -58,7 +58,7 @@ export default function ProductCard({
 
       <div className="pt-5 text-center">
         <p className="text-[10px] tracking-[0.32em]  uppercase text-gold/80">
-          {product.categories.name}
+          {product.categories?.name ?? "Uncategorized"}
         </p>
 
         <h3 className="mt-2 font-serif text-xl md:text-2xl text-foreground group-hover:text-gold transition-colors">
