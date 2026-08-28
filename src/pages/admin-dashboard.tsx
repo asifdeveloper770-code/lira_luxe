@@ -20,14 +20,17 @@ export default function AdminDashboard() {
     const [password, setPassword] = useState("");
     const [authError, setAuthError] = useState("");
     // Application UI states
-    const [activeTab, setActiveTab] = useState<"showroom" | "carts" | "orders">("showroom");
+    const [activeTab, setActiveTab] = useState<
+        "showroom" | "carts" | "orders" | "contact"
+    >("showroom");
     const [carts, setCarts] = useState(mockCartData);
     const [orders, setOrders] = useState<any[]>([]);
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     // const fileName = product.image.split("/").pop();
     const [preview, setPreview] = useState("");
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    // const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [editingProduct, setEditingProduct] = useState<any | null>(null);
     // Search & Filter Logic States
     const [searchQuery, setSearchQuery] = useState("");
     const [filterCategory, setFilterCategory] = useState("All");
@@ -35,6 +38,10 @@ export default function AdminDashboard() {
     // Pagination Configuration State
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    const [email, setEmail] = useState("");
+    // const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     // New Specimen Creation States
     const [name, setName] = useState("");
@@ -48,11 +55,42 @@ export default function AdminDashboard() {
 
     const [categories, setCategories] = useState<Category[]>([]);
 
+    const [contactMessages, setContactMessages] = useState<any[]>([]);
+    const [selectedContact, setSelectedContact] = useState<any | null>(null);
+    const [contactSearch, setContactSearch] = useState("");
+    const [contactStatus, setContactStatus] = useState("all");
+
+    const [successMessage, setSuccessMessage] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
+
     useEffect(() => {
         getCategories();
         getProducts();
         getOrders();
+        getContactMessages();
+        const checkAuth = async () => {
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            setIsAuthenticated(!!session);
+        };
+
+        checkAuth();
+
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange(
+            (_event, session) => {
+                setIsAuthenticated(!!session);
+            }
+        );
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
+
     const uploadImage = async (file: File) => {
         const fileName = `${Date.now()}-${file.name}`;
 
@@ -66,7 +104,6 @@ export default function AdminDashboard() {
             .from("product-images")
             .getPublicUrl(fileName);
 
-        console.log(data.publicUrl);
 
         return data.publicUrl;
     };
@@ -107,69 +144,140 @@ export default function AdminDashboard() {
             return;
         }
 
-        console.log(data);
         setProducts(data || []);
     };
+    const getContactMessages = async () => {
+        const { data, error } = await supabase
+            .from("contact_messages")
+            .select("*")
+            .order("created_at", { ascending: false });
 
-    const handleLogin = (e: React.FormEvent) => {
+        if (error) {
+            console.error("Contact messages error:", error);
+            return;
+        }
+
+        setContactMessages(data || []);
+
+        if (data && data.length > 0 && !selectedContact) {
+            setSelectedContact(data[0]);
+        }
+    };
+
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (password === "") {
+
+        setAuthError("");
+
+        if (!email || !password) {
+            setAuthError("Please enter your email and password.");
+            return;
+        }
+
+        setIsLoading(true);
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        setIsLoading(false);
+
+        if (error) {
+            console.error("Admin login error:", error);
+            setAuthError("Invalid email or password.");
+            return;
+        }
+
+        if (data.user) {
             setIsAuthenticated(true);
             setAuthError("");
-        } else {
-            setAuthError("Invalid access key pattern.");
         }
     };
 
     const handleCreateProduct = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!name || !price || !categoryId) return;
+        setSuccessMessage("");
 
-        let imageUrl = "";
-
-        if (imageFile) {
-            imageUrl = await uploadImage(imageFile);
+        if (!name || !price || !categoryId) {
+            return;
         }
-        if (editingProduct) {
-            await supabase
-                .from("products")
-                .update({
-                    name,
-                    price: Number(price),
-                    tag,
-                    category_id: categoryId,
-                    image: imageUrl || editingProduct.image
-                })
-                .eq("id", editingProduct.id);
-        } else {
-            await supabase
+
+        setIsCreating(true);
+
+        try {
+            let imageUrl = "";
+
+            // Upload image if selected
+            if (imageFile) {
+                imageUrl = await uploadImage(imageFile);
+            }
+
+            // Create product
+            const { error } = await supabase
                 .from("products")
                 .insert({
-                    name,
+                    name: name.trim(),
                     price: Number(price),
-                    tag,
                     category_id: categoryId,
-                    image: imageUrl
+                    tag: tag.trim() || null,
+                    image: imageUrl || null,
                 });
+
+            if (error) {
+                console.error("Product creation error:", error);
+                throw error;
+            }
+
+            // Refresh product list
+            await getProducts();
+
+            // Clear form
+            setName("");
+            setPrice("");
+            setTag("");
+            setCategoryId("");
+            setImageFile(null);
+            setPreview("");
+
+            // Clear file input manually
+            const fileInput = document.getElementById(
+                "product-image-input"
+            ) as HTMLInputElement | null;
+
+            if (fileInput) {
+                fileInput.value = "";
+            }
+
+            // Show success message
+            setSuccessMessage(
+                `"${name}" has been added successfully to the showroom.`
+            );
+
+            // Automatically hide message after 4 seconds
+            setTimeout(() => {
+                setSuccessMessage("");
+            }, 4000);
+
+        } catch (error) {
+            console.error("Failed to create product:", error);
+        } finally {
+            setIsCreating(false);
         }
-
-        await getProducts();
-
-        setName("");
-        setPrice("");
-        setTag("");
-        setCategoryId("");
-        setImageFile(null);
     };
-    const handleEdit = (product: Product) => {
+
+    const handleEdit = (product: any) => {
         setEditingProduct(product);
 
-        setName(product.name);
-        setPrice(product.price.toString());
+        setName(product.name || "");
+        setPrice(String(product.price || ""));
+        setCategoryId(product.category_id || "");
         setTag(product.tag || "");
-        setCategoryId(product.category_id);
+        setPreview(product.image || "");
+        setImageFile(null);
     };
+
     const deleteProduct = async (id: string) => {
 
         const { error } = await supabase
@@ -184,17 +292,54 @@ export default function AdminDashboard() {
 
         getProducts();
     };
-    const updateProduct = async (
-        id: string,
-        values: any
-    ) => {
+    const handleUpdateProduct = async () => {
+        if (!editingProduct) return;
 
-        await supabase
+        setSuccessMessage("");
+        setAuthError("");
+
+        const { error } = await supabase
             .from("products")
-            .update(values)
-            .eq("id", id);
+            .update({
+                name: name.trim(),
+                price: Number(price),
+                category_id: categoryId,
+                tag: tag.trim() || null,
+                image: editingProduct.image || null,
+            })
+            .eq("id", editingProduct.id);
 
-        getProducts();
+        if (error) {
+            console.error("Product update error:", error);
+            setAuthError(`Failed to update product: ${error.message}`);
+            return;
+        }
+
+        await getProducts();
+
+        setSuccessMessage(
+            `"${name}" updated successfully.`
+        );
+
+        setEditingProduct(null);
+        setName("");
+        setPrice("");
+        setCategoryId("");
+        setTag("");
+        setPreview("");
+        setImageFile(null);
+
+        const fileInput = document.getElementById(
+            "product-image-input"
+        ) as HTMLInputElement | null;
+
+        if (fileInput) {
+            fileInput.value = "";
+        }
+
+        setTimeout(() => {
+            setSuccessMessage("");
+        }, 4000);
     };
     interface Product {
         categories?: { name: string; };
@@ -253,6 +398,34 @@ export default function AdminDashboard() {
             setCurrentPage(newPage);
         }
     };
+    const updateContactStatus = async (
+        id: string,
+        status: "new" | "read" | "replied" | "archived"
+    ) => {
+        const { error } = await supabase
+            .from("contact_messages")
+            .update({ status })
+            .eq("id", id);
+
+        if (error) {
+            console.error("Failed to update contact:", error);
+            return;
+        }
+
+        setContactMessages((current) =>
+            current.map((message) =>
+                message.id === id
+                    ? { ...message, status }
+                    : message
+            )
+        );
+
+        setSelectedContact((current: { id: string; }) =>
+            current?.id === id
+                ? { ...current, status }
+                : current
+        );
+    };
 
     if (!isAuthenticated) {
         return (
@@ -264,11 +437,20 @@ export default function AdminDashboard() {
                         <h1 className="font-serif text-2xl tracking-wider mb-6">Atelier Vault Gate</h1>
                         <form onSubmit={handleLogin} className="space-y-4">
                             <Input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="bg-[#1c1a17] border-[#3a352a] text-[#f4efe6] rounded-none text-center tracking-widest placeholder-[#6e6555] focus-visible:ring-[#c5a880]"
+
+                            />
+                            <Input
                                 type="password"
-                                placeholder="Enter Private Vault Key (lira1924)"
+                                placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="bg-[#1c1a17] border-[#3a352a] text-[#f4efe6] rounded-none text-center tracking-widest placeholder-[#6e6555] focus-visible:ring-[#c5a880]"
+
                             />
                             {authError && <p className="text-red-400 text-xs italic font-serif">{authError}</p>}
                             <Button type="submit" className="w-full bg-[#c5a880] text-[#0d0d0c] rounded-none hover:bg-[#b0936b] tracking-widest font-serif text-xs uppercase">
@@ -324,6 +506,27 @@ export default function AdminDashboard() {
                     >
                         ✦ Cart Intelligence
                     </button>
+                    <button
+                        onClick={() => setActiveTab("contact")}
+                        className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest transition-all rounded-none border font-mono ${activeTab === "contact"
+                            ? "bg-[#c5a880] text-[#0d0d0c] border-[#c5a880]"
+                            : "bg-[#141311] text-[#a8a296] border-[#22201c] hover:border-[#3a352a] hover:text-[#f4efe6]"
+                            }`}
+                    >
+                        ✦ Contact Messages
+
+                        {contactMessages.filter(
+                            (message) => message.status === "new"
+                        ).length > 0 && (
+                                <span className="ml-2 inline-flex items-center justify-center min-w-5 h-5 px-1 bg-[#0d0d0c] text-[#c5a880] text-[9px]">
+                                    {
+                                        contactMessages.filter(
+                                            (message) => message.status === "new"
+                                        ).length
+                                    }
+                                </span>
+                            )}
+                    </button>
 
                     <div className="mt-auto pt-6">
                         <Button variant="outline" onClick={() => setIsAuthenticated(false)} className="w-full border-[#3a352a] text-[#a8a296] hover:bg-[#1c1a17] hover:text-red-400 rounded-none text-xs tracking-wider uppercase font-mono">
@@ -346,8 +549,25 @@ export default function AdminDashboard() {
                                     <CardDescription className="text-[#a8a296] text-xs">Inject items into catalog arrays.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <form onSubmit={handleCreateProduct} className="space-y-4">
-                                        <div>
+                                    {successMessage && (
+                                        <div className="mb-4 border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+                                            <p className="text-xs text-emerald-400 font-mono">
+                                                ✓ {successMessage}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+
+                                            if (editingProduct) {
+                                                handleUpdateProduct();
+                                            } else {
+                                                handleCreateProduct(e);
+                                            }
+                                        }}
+                                        className="space-y-4"
+                                    >                                          <div>
                                             <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Item Headline</label>
                                             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Aurelia Cuff" className="bg-[#1c1a17] border-[#22201c] rounded-none text-sm focus-visible:ring-[#c5a880]" />
                                         </div>
@@ -379,6 +599,7 @@ export default function AdminDashboard() {
                                             <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Product Image</label>
 
                                             <input
+                                                id="product-image-input"
                                                 type="file"
                                                 accept="image/*"
                                                 onChange={(e) => {
@@ -403,7 +624,45 @@ export default function AdminDashboard() {
                                             <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Curated Flag Tag</label>
                                             <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g., Limited" className="bg-[#1c1a17] border-[#22201c] rounded-none text-sm focus-visible:ring-[#c5a880]" />
                                         </div>
-                                        <Button type="submit" className="w-full bg-[#c5a880] text-[#0d0d0c] rounded-none hover:bg-[#b0936b] tracking-wider text-xs uppercase">Commit Piece</Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={isCreating}
+                                            className="w-full bg-[#c5a880] text-[#0d0d0c] rounded-none hover:bg-[#b0936b] disabled:opacity-50"
+                                        >
+                                            {isCreating
+                                                ? editingProduct
+                                                    ? "Saving Changes..."
+                                                    : "Adding Product..."
+                                                : editingProduct
+                                                    ? "Save Changes"
+                                                    : "Forge Specimen"}
+                                        </Button>
+                                        {editingProduct && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setEditingProduct(null);
+                                                    setName("");
+                                                    setPrice("");
+                                                    setCategoryId("");
+                                                    setTag("");
+                                                    setPreview("");
+                                                    setImageFile(null);
+
+                                                    const fileInput = document.getElementById(
+                                                        "product-image-input"
+                                                    ) as HTMLInputElement | null;
+
+                                                    if (fileInput) {
+                                                        fileInput.value = "";
+                                                    }
+                                                }}
+                                                className="w-full border-[#3a352a] text-[#a8a296] rounded-none hover:bg-[#1c1a17]"
+                                            >
+                                                Cancel Edit
+                                            </Button>
+                                        )}
                                     </form>
                                 </CardContent>
                             </Card>
@@ -449,6 +708,7 @@ export default function AdminDashboard() {
                                                 <TableRow className="hover:bg-transparent border-none">
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Item Details</TableHead>
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Category</TableHead>
+                                                    <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Name</TableHead>
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Price</TableHead>
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Badge</TableHead>
                                                 </TableRow>
@@ -467,7 +727,9 @@ export default function AdminDashboard() {
                                                             />
                                                         </TableCell>
                                                         <TableCell className="text-[10px] tracking-wide uppercase font-mono text-[#a8a296]">{p.categories?.name}</TableCell>
+                                                        <TableCell className="text-[10px] tracking-wide uppercase font-mono text-[#a8a296]">{p.name}</TableCell>
                                                         <TableCell className="font-serif text-xs text-[#c5a880]">${p.price.toLocaleString()}</TableCell>
+
                                                         <TableCell>
                                                             {p.tag ? <Badge className="bg-[#3a352a]/50 text-[#c5a880] border border-[#c5a880]/30 rounded-none text-[9px] font-mono uppercase">{p.tag}</Badge> : <span className="text-[10px] text-[#5c564c] font-mono">Standard</span>}
                                                         </TableCell>
@@ -476,13 +738,13 @@ export default function AdminDashboard() {
                                                             onClick={() => handleEdit(p)}>
                                                             Edit
                                                         </Button>
+                                                            <Button
+                                                                variant="destructive"
+                                                                onClick={() => deleteProduct(p.id)}
+                                                            >
+                                                                Delete
+                                                            </Button>
                                                         </TableCell>
-                                                        <TableCell>   <Button
-                                                            variant="destructive"
-                                                            onClick={() => deleteProduct(p.id)}
-                                                        >
-                                                            Delete
-                                                        </Button></TableCell>
 
                                                     </TableRow>
                                                 ))}
@@ -662,6 +924,469 @@ export default function AdminDashboard() {
                                 </Table>
                             </CardContent>
                         </Card>
+                    )}
+                    {/* ============================================================
+    TAB AREA 4: CONTACT MESSAGES
+============================================================ */}
+
+                    {activeTab === "contact" && (
+                        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+
+                            {/* ====================================================
+            MESSAGE LIST
+        ==================================================== */}
+
+                            <Card className="xl:col-span-3 bg-[#141311] border-[#22201c] text-[#f4efe6] rounded-none">
+
+                                <CardHeader className="border-b border-[#22201c]">
+
+                                    <div className="flex items-center justify-between">
+
+                                        <div>
+                                            <CardTitle className="font-serif text-lg text-[#c5a880]">
+                                                Maison Correspondence
+                                            </CardTitle>
+
+                                            <CardDescription className="text-[#a8a296] text-xs mt-1">
+                                                Client inquiries received through the concierge.
+                                            </CardDescription>
+                                        </div>
+
+                                        <Badge className="rounded-none bg-[#3a352a]/40 text-[#c5a880] border border-[#c5a880]/30 font-mono text-[9px] uppercase">
+                                            {
+                                                contactMessages.filter(
+                                                    (m) => m.status === "new"
+                                                ).length
+                                            } New
+                                        </Badge>
+
+                                    </div>
+
+
+                                    {/* SEARCH + FILTER */}
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+
+                                        <div className="sm:col-span-2">
+
+                                            <Input
+                                                value={contactSearch}
+                                                onChange={(e) =>
+                                                    setContactSearch(e.target.value)
+                                                }
+                                                placeholder="Search client, email or subject..."
+                                                className="bg-[#1c1a17] border-[#22201c] rounded-none text-xs focus-visible:ring-[#c5a880]"
+                                            />
+
+                                        </div>
+
+
+                                        <select
+                                            value={contactStatus}
+                                            onChange={(e) =>
+                                                setContactStatus(e.target.value)
+                                            }
+                                            className="w-full h-9 bg-[#1c1a17] border border-[#22201c] text-xs text-[#f4efe6] px-2 focus:outline-none"
+                                        >
+                                            <option value="all">
+                                                All Messages
+                                            </option>
+
+                                            <option value="new">
+                                                New
+                                            </option>
+
+                                            <option value="read">
+                                                Read
+                                            </option>
+
+                                            <option value="replied">
+                                                Replied
+                                            </option>
+
+                                            <option value="archived">
+                                                Archived
+                                            </option>
+                                        </select>
+
+                                    </div>
+
+                                </CardHeader>
+
+
+                                <CardContent className="p-0">
+
+                                    <div className="overflow-x-auto">
+
+                                        <Table>
+
+                                            <TableHeader className="border-b border-[#22201c]">
+
+                                                <TableRow className="hover:bg-transparent border-none">
+
+                                                    <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">
+                                                        Client
+                                                    </TableHead>
+
+                                                    <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">
+                                                        Subject
+                                                    </TableHead>
+
+                                                    <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">
+                                                        Status
+                                                    </TableHead>
+
+                                                    <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">
+                                                        Date
+                                                    </TableHead>
+
+                                                </TableRow>
+
+                                            </TableHeader>
+
+
+                                            <TableBody>
+
+                                                {contactMessages
+                                                    .filter((message) => {
+
+                                                        const search =
+                                                            contactSearch.toLowerCase();
+
+                                                        const matchesSearch =
+                                                            message.name
+                                                                ?.toLowerCase()
+                                                                .includes(search) ||
+                                                            message.email
+                                                                ?.toLowerCase()
+                                                                .includes(search) ||
+                                                            message.subject
+                                                                ?.toLowerCase()
+                                                                .includes(search);
+
+                                                        const matchesStatus =
+                                                            contactStatus === "all" ||
+                                                            message.status === contactStatus;
+
+                                                        return (
+                                                            matchesSearch &&
+                                                            matchesStatus
+                                                        );
+                                                    })
+                                                    .map((message) => (
+
+                                                        <TableRow
+                                                            key={message.id}
+                                                            onClick={() => {
+                                                                setSelectedContact(message);
+
+                                                                if (
+                                                                    message.status === "new"
+                                                                ) {
+                                                                    updateContactStatus(
+                                                                        message.id,
+                                                                        "read"
+                                                                    );
+                                                                }
+                                                            }}
+                                                            className={`border-b border-[#22201c]/40 cursor-pointer transition-colors ${selectedContact?.id === message.id
+                                                                ? "bg-[#1c1a17]"
+                                                                : "hover:bg-[#1c1a17]/40"
+                                                                }`}
+                                                        >
+
+                                                            <TableCell>
+
+                                                                <div className="flex items-center gap-3">
+
+                                                                    <div className="w-9 h-9 flex items-center justify-center border border-[#c5a880]/30 text-[#c5a880] font-serif">
+                                                                        {message.name
+                                                                            ?.charAt(0)
+                                                                            ?.toUpperCase()}
+                                                                    </div>
+
+                                                                    <div>
+
+                                                                        <p className="text-xs font-medium">
+                                                                            {message.name}
+                                                                        </p>
+
+                                                                        <p className="text-[10px] text-[#a8a296] mt-1">
+                                                                            {message.email}
+                                                                        </p>
+
+                                                                    </div>
+
+                                                                </div>
+
+                                                            </TableCell>
+
+
+                                                            <TableCell>
+
+                                                                <p className="text-xs">
+                                                                    {message.subject ||
+                                                                        "No Subject"}
+                                                                </p>
+
+                                                                <p className="text-[10px] text-[#6e6555] mt-1 max-w-[220px] truncate">
+                                                                    {message.message}
+                                                                </p>
+
+                                                            </TableCell>
+
+
+                                                            <TableCell>
+
+                                                                <Badge
+                                                                    className={`rounded-none font-mono text-[9px] uppercase ${message.status === "new"
+                                                                        ? "bg-amber-950 text-amber-400 border border-amber-500/30"
+                                                                        : message.status === "read"
+                                                                            ? "bg-blue-950 text-blue-400 border border-blue-500/30"
+                                                                            : message.status === "replied"
+                                                                                ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30"
+                                                                                : "bg-zinc-900 text-zinc-400 border border-zinc-700/50"
+                                                                        }`}
+                                                                >
+                                                                    {message.status}
+                                                                </Badge>
+
+                                                            </TableCell>
+
+
+                                                            <TableCell>
+
+                                                                <span className="text-[10px] text-[#a8a296] font-mono">
+                                                                    {new Date(
+                                                                        message.created_at
+                                                                    ).toLocaleDateString()}
+                                                                </span>
+
+                                                            </TableCell>
+
+                                                        </TableRow>
+
+                                                    ))}
+
+
+                                                {contactMessages.length === 0 && (
+
+                                                    <TableRow>
+
+                                                        <TableCell
+                                                            colSpan={4}
+                                                            className="text-center py-16 text-xs italic text-[#6e6555] font-serif"
+                                                        >
+                                                            No correspondence has been received.
+                                                        </TableCell>
+
+                                                    </TableRow>
+
+                                                )}
+
+                                            </TableBody>
+
+                                        </Table>
+
+                                    </div>
+
+                                </CardContent>
+
+                            </Card>
+
+
+                            {/* ====================================================
+            MESSAGE DETAIL
+        ==================================================== */}
+
+                            <Card className="xl:col-span-2 bg-[#141311] border-[#22201c] text-[#f4efe6] rounded-none h-fit">
+
+                                {selectedContact ? (
+
+                                    <>
+
+                                        <CardHeader className="border-b border-[#22201c]/60">
+
+                                            <div className="flex items-center justify-between">
+
+                                                <div>
+
+                                                    <p className="font-mono text-[10px] uppercase tracking-widest text-[#c5a880]">
+                                                        Correspondence
+                                                    </p>
+
+                                                    <CardTitle className="font-serif text-xl mt-2">
+                                                        {selectedContact.subject ||
+                                                            "No Subject"}
+                                                    </CardTitle>
+
+                                                </div>
+
+                                                <Badge
+                                                    className={`rounded-none font-mono text-[9px] uppercase ${selectedContact.status === "new"
+                                                        ? "bg-amber-950 text-amber-400 border border-amber-500/30"
+                                                        : selectedContact.status === "replied"
+                                                            ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30"
+                                                            : "bg-zinc-900 text-zinc-400 border border-zinc-700/50"
+                                                        }`}
+                                                >
+                                                    {selectedContact.status}
+                                                </Badge>
+
+                                            </div>
+
+                                        </CardHeader>
+
+
+                                        <CardContent className="pt-5 space-y-6">
+
+                                            {/* CLIENT */}
+
+                                            <div>
+
+                                                <h4 className="text-[10px] font-mono uppercase tracking-widest text-[#c5a880] mb-3">
+                                                    Client Identity
+                                                </h4>
+
+                                                <div className="bg-[#0d0d0c] border border-[#22201c]/80 p-4 space-y-2">
+
+                                                    <p className="text-xs">
+                                                        <span className="text-[#a8a296] font-mono">
+                                                            Name:
+                                                        </span>{" "}
+                                                        {selectedContact.name}
+                                                    </p>
+
+                                                    <p className="text-xs">
+                                                        <span className="text-[#a8a296] font-mono">
+                                                            Email:
+                                                        </span>{" "}
+                                                        <a
+                                                            href={`mailto:${selectedContact.email}`}
+                                                            className="text-[#c5a880] hover:underline"
+                                                        >
+                                                            {selectedContact.email}
+                                                        </a>
+                                                    </p>
+
+                                                    <p className="text-xs">
+                                                        <span className="text-[#a8a296] font-mono">
+                                                            Received:
+                                                        </span>{" "}
+                                                        {new Date(
+                                                            selectedContact.created_at
+                                                        ).toLocaleString()}
+                                                    </p>
+
+                                                </div>
+
+                                            </div>
+
+
+                                            {/* MESSAGE */}
+
+                                            <div>
+
+                                                <h4 className="text-[10px] font-mono uppercase tracking-widest text-[#c5a880] mb-3">
+                                                    Message
+                                                </h4>
+
+                                                <div className="bg-[#0d0d0c] border border-[#22201c]/80 p-5">
+
+                                                    <p className="text-xs leading-7 text-[#d6d0c6] whitespace-pre-wrap">
+                                                        {selectedContact.message}
+                                                    </p>
+
+                                                </div>
+
+                                            </div>
+
+
+                                            {/* ACTIONS */}
+
+                                            <div className="space-y-3">
+
+                                                <h4 className="text-[10px] font-mono uppercase tracking-widest text-[#c5a880]">
+                                                    Correspondence Actions
+                                                </h4>
+
+
+                                                <div className="grid grid-cols-2 gap-2">
+
+                                                    {selectedContact.status !== "read" && (
+                                                        <Button
+                                                            onClick={() =>
+                                                                updateContactStatus(
+                                                                    selectedContact.id,
+                                                                    "read"
+                                                                )
+                                                            }
+                                                            className="bg-[#c5a880] text-[#0d0d0c] rounded-none hover:bg-[#b0936b] text-[10px] uppercase tracking-wider"
+                                                        >
+                                                            Mark Read
+                                                        </Button>
+                                                    )}
+
+
+                                                    <Button
+                                                        onClick={() =>
+                                                            updateContactStatus(
+                                                                selectedContact.id,
+                                                                "replied"
+                                                            )
+                                                        }
+                                                        className="bg-[#1c1a17] border border-[#3a352a] text-[#c5a880] rounded-none hover:bg-[#22201c] text-[10px] uppercase tracking-wider"
+                                                    >
+                                                        Mark Replied
+                                                    </Button>
+
+
+                                                    <a
+                                                        href={`mailto:${selectedContact.email}?subject=Re: ${selectedContact.subject ||
+                                                            "Your inquiry to Maison Lira"
+                                                            }`}
+                                                        className="flex items-center justify-center bg-[#1c1a17] border border-[#3a352a] text-[#a8a296] hover:text-[#c5a880] hover:border-[#c5a880] py-2 px-3 text-[10px] uppercase tracking-wider transition-colors"
+                                                    >
+                                                        Reply by Email
+                                                    </a>
+
+
+                                                    <Button
+                                                        onClick={() =>
+                                                            updateContactStatus(
+                                                                selectedContact.id,
+                                                                "archived"
+                                                            )
+                                                        }
+                                                        variant="outline"
+                                                        className="border-[#3a352a] text-[#a8a296] hover:bg-[#1c1a17] hover:text-[#c5a880] rounded-none text-[10px] uppercase tracking-wider"
+                                                    >
+                                                        Archive
+                                                    </Button>
+
+                                                </div>
+
+                                            </div>
+
+                                        </CardContent>
+
+                                    </>
+
+                                ) : (
+
+                                    <div className="p-10 text-center">
+
+                                        <p className="font-serif text-sm italic text-[#6e6555]">
+                                            Select a correspondence to display its dossier.
+                                        </p>
+
+                                    </div>
+
+                                )}
+
+                            </Card>
+
+                        </div>
                     )}
 
                 </main>
