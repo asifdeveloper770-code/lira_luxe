@@ -313,6 +313,7 @@ export default function AdminDashboard() {
                     price: Number(price),
                     category_id: categoryId,
                     tag: tag.trim() || null,
+                    updated_at: new Date().toISOString(),
                     image: imageUrl,
                 })
                 .eq("id", editingProduct.id)
