@@ -29,7 +29,6 @@ export default function AdminDashboard() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     // const fileName = product.image.split("/").pop();
     const [preview, setPreview] = useState("");
-    // const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingProduct, setEditingProduct] = useState<any | null>(null);
     // Search & Filter Logic States
     const [searchQuery, setSearchQuery] = useState("");
@@ -297,49 +296,72 @@ export default function AdminDashboard() {
 
         setSuccessMessage("");
         setAuthError("");
+        setIsCreating(true);
 
-        const { error } = await supabase
-            .from("products")
-            .update({
-                name: name.trim(),
-                price: Number(price),
-                category_id: categoryId,
-                tag: tag.trim() || null,
-                image: editingProduct.image || null,
-            })
-            .eq("id", editingProduct.id);
+        try {
+            let imageUrl = editingProduct.image || null;
 
-        if (error) {
-            console.error("Product update error:", error);
-            setAuthError(`Failed to update product: ${error.message}`);
-            return;
+            // Upload a new image if one was selected
+            if (imageFile) {
+                imageUrl = await uploadImage(imageFile);
+            }
+
+            const { data, error } = await supabase
+                .from("products")
+                .update({
+                    name: name.trim(),
+                    price: Number(price),
+                    category_id: categoryId,
+                    tag: tag.trim() || null,
+                    image: imageUrl,
+                })
+                .eq("id", editingProduct.id)
+                .select()
+                .single();
+
+            if (error) {
+                console.error("Product update error:", error);
+                setAuthError(`Failed to update product: ${error.message}`);
+                return;
+            }
+
+            console.log("Product updated successfully:", data);
+
+            // Refresh products
+            await getProducts();
+
+            // Success message
+            setSuccessMessage(`"${name}" updated successfully.`);
+
+            // Reset edit state
+            setEditingProduct(null);
+            setName("");
+            setPrice("");
+            setCategoryId("");
+            setTag("");
+            setPreview("");
+            setImageFile(null);
+
+            const fileInput = document.getElementById(
+                "product-image-input"
+            ) as HTMLInputElement | null;
+
+            if (fileInput) {
+                fileInput.value = "";
+            }
+
+            setTimeout(() => {
+                setSuccessMessage("");
+            }, 4000);
+
+        } catch (error: any) {
+            console.error("Failed to update product:", error);
+            setAuthError(
+                `Failed to update product: ${error?.message || "Unknown error"}`
+            );
+        } finally {
+            setIsCreating(false);
         }
-
-        await getProducts();
-
-        setSuccessMessage(
-            `"${name}" updated successfully.`
-        );
-
-        setEditingProduct(null);
-        setName("");
-        setPrice("");
-        setCategoryId("");
-        setTag("");
-        setPreview("");
-        setImageFile(null);
-
-        const fileInput = document.getElementById(
-            "product-image-input"
-        ) as HTMLInputElement | null;
-
-        if (fileInput) {
-            fileInput.value = "";
-        }
-
-        setTimeout(() => {
-            setSuccessMessage("");
-        }, 4000);
     };
     interface Product {
         categories?: { name: string; };
