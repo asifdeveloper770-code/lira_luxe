@@ -1,3 +1,4 @@
+"use client";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -7,13 +8,16 @@ import {
   Gem,
 } from "lucide-react";
 
-import heroNecklace from "@/assets/hero-necklace.jpg";
+import HeroVideo from "@/assets/video/Lira video.mp4";
 import story from "@/assets/story.jpg";
 
 import {
   bestSellers,
   collections,
 } from "@/lib/products";
+// import { getCategories, getCategoryImageUrl } from "@/lib/products";
+import { useEffect, useState } from "react";
+import { collections_product, type Category } from "@/lib/products";
 
 import ProductCard from "@/components/ProductCard";
 
@@ -44,13 +48,16 @@ function Hero() {
   return (
     <section className="relative min-h-[100svh] overflow-hidden">
       <div className="absolute inset-0">
-        <img
-          src={heroNecklace}
-          alt="Lira Fashion diamond necklace"
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
           className="w-full h-full object-cover object-center scale-105"
-          width={1600}
-          height={1920}
-        />
+        >
+          <source src={HeroVideo} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-transparent to-ink/40" />
       </div>
@@ -111,7 +118,7 @@ function Marquee() {
   );
 }
 
-function Collections() {
+export function Collections() {
   return (
     <section className="container-luxe py-5 sm:py-28 md:py-10">
       <Reveal className="text-center">
@@ -122,11 +129,11 @@ function Collections() {
       </Reveal>
 
       <div className="mt-12 sm:mt-16 grid gap-4 sm:gap-6 md:gap-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        {collections.map((c, i) => (
+        {collections_product.map((c, i) => (
           <Reveal key={c.slug} delay={i * 90}>
             <Link to={`/collections/${c.slug}`} className="group block product-card">
               <div className="img-wrap relative aspect-[3/4] bg-secondary">
-                <img src={c.image} alt={c.name} loading="lazy" className="w-full h-full object-cover" />
+                <img src={(c.image)} alt={c.name} loading="lazy" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-5 text-center">
                   <p className="text-[10px] tracking-[0.32em] uppercase text-gold/80">{c.tagline}</p>
@@ -293,11 +300,11 @@ function Gallery() {
 
   const sizes = [
     "row-span-2 col-span-2",
-    "row-span-1 col-span-1",
-    "row-span-1 col-span-1",
     "row-span-2 col-span-1",
-    "row-span-1 col-span-2",
-    "row-span-1 col-span-1",
+    "row-span-2 col-span-1",
+    "row-span-2 col-span-1",
+    "row-span-3 col-span-3",
+    "row-span-2 col-span-",
   ];
 
   return (

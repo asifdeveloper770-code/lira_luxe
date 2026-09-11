@@ -106,7 +106,7 @@ export default function CollectionPage() {
           <img
             src={collection.image}
             alt={collection.name}
-            className="w-full max-h-[70vh] object-contain z-0 block mx-auto"
+            className="w-full max-h-[65vh] object-cover z-0 block mx-auto"
           />
         )}
 
