@@ -21,32 +21,52 @@ export interface Category {
   created_at: string;
 }
 
-// Fetch categories from Supabase database
+// Fetch categories from Supabase database (with resilient fallback)
 export async function getCategories(): Promise<Category[]> {
-  const excludedSlugs = ["watches", "keychains", "pendants"];
+  try {
+    const excludedSlugs = ["watches", "keychains", "pendants"];
 
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .not("slug", "in", `(${excludedSlugs.map((s) => `"${s}"`).join(",")})`)
-    .order("name", { ascending: true });
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .not("slug", "in", `(${excludedSlugs.map((s) => `"${s}"`).join(",")})`)
+      .order("name", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching categories:", error.message);
-    return [];
+    if (error || !data || data.length === 0) {
+      return collections.map((c, i) => ({
+        id: `cat-${i + 1}`,
+        name: c.name,
+        slug: c.slug,
+        image: c.image,
+        tagline: c.tagline,
+        created_at: new Date().toISOString(),
+      }));
+    }
+
+    return data;
+  } catch {
+    return collections.map((c, i) => ({
+      id: `cat-${i + 1}`,
+      name: c.name,
+      slug: c.slug,
+      image: c.image,
+      tagline: c.tagline,
+      created_at: new Date().toISOString(),
+    }));
   }
-
-  return data;
 }
 
 // Optional helper to resolve full image URLs if images are stored in Supabase Storage buckets
 export function getCategoryImageUrl(path: string | null): string {
-  if (!path) return "/placeholder.jpg"; // Default fallback image
-  if (path.startsWith("http")) return path; // Direct external URL
+  if (!path) return "/placeholder.jpg";
+  if (path.startsWith("http") || path.startsWith("data:") || path.startsWith("/")) return path;
 
-  // Resolves image from a public bucket named 'category-images'
-  const { data } = supabase.storage.from("category-images").getPublicUrl(path);
-  return data.publicUrl;
+  try {
+    const { data } = supabase.storage.from("category-images").getPublicUrl(path);
+    return data?.publicUrl || path;
+  } catch {
+    return path;
+  }
 }
 
 export const heroImages = { p1, p2, p3, p4 };
@@ -66,6 +86,26 @@ export const collections_product = [
   { slug: "rings", name: "Rings", image: rings, tagline: "Vows in 18k gold" },
   { slug: "belts", name: "Beaded Belts", image: belts, tagline: "Sculpt the silhouette" },
 ] as const;
+
+export const defaultCategories = [
+  { id: "cat-1", name: "Earrings" },
+  { id: "cat-2", name: "Necklaces" },
+  { id: "cat-3", name: "Bracelets" },
+  { id: "cat-4", name: "Rings" },
+  { id: "cat-5", name: "Beaded Belts" },
+];
+
+export const defaultProducts = [
+  { id: "p-1", name: "Soleil Pavé Hoops", price: 1280, image: p1, tag: "New", category_id: "cat-1", categories: { name: "Earrings" } },
+  { id: "p-2", name: "Étoile Solitaire", price: 1850, image: p2, tag: "Bestseller", category_id: "cat-2", categories: { name: "Necklaces" } },
+  { id: "p-3", name: "Aurore Tennis", price: 2640, image: p3, tag: "Exclusive", category_id: "cat-3", categories: { name: "Bracelets" } },
+  { id: "p-4", name: "Rubis de Lira", price: 3420, image: p4, tag: "Limited", category_id: "cat-4", categories: { name: "Rings" } },
+  { id: "p-5", name: "Lustre Drop Earrings", price: 950, image: earrings, tag: "Signature", category_id: "cat-1", categories: { name: "Earrings" } },
+  { id: "p-6", name: "Chaine d'Or Collier", price: 2100, image: necklaces, tag: "Atelier", category_id: "cat-2", categories: { name: "Necklaces" } },
+  { id: "p-7", name: "Symphonie Cuff", price: 1750, image: bracelets, tag: "New", category_id: "cat-3", categories: { name: "Bracelets" } },
+  { id: "p-8", name: "Solstice Diamond Band", price: 2900, image: rings, tag: "Heirloom", category_id: "cat-4", categories: { name: "Rings" } },
+  { id: "p-9", name: "Ceinture Perlée Royale", price: 1450, image: belts, tag: "Rare", category_id: "cat-5", categories: { name: "Beaded Belts" } },
+];
 
 export const bestSellers: Product[] = [
   { id: "1", name: "Soleil Pavé Hoops", category: "Earrings", price: 1280, image: p1, tag: "New" },

@@ -8,7 +8,7 @@ import {
   Gem,
 } from "lucide-react";
 
-import HeroVideo from "@/assets/video/Lira video.mp4";
+import heroImage from "@/assets/hero-necklace.jpg";
 import story from "@/assets/story.jpg";
 
 import {
@@ -48,16 +48,11 @@ function Hero() {
   return (
     <section className="relative min-h-[100svh] overflow-hidden">
       <div className="absolute inset-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
+        <img
+          src={heroImage}
+          alt="Lira Fine Jewellery"
           className="w-full h-full object-cover object-center scale-105"
-        >
-          <source src={HeroVideo} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-transparent to-ink/40" />
       </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { collections } from "@/lib/products";
+import { collections, defaultProducts } from "@/lib/products";
 
 import ProductCard from "../components/ProductCard";
 import { Reveal, SectionLabel } from "../components/Reveal";
@@ -42,31 +42,53 @@ export default function CollectionPage() {
   const loadCollection = async () => {
     setLoading(true);
 
-    // Get category
-    const { data: category, error: categoryError } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("slug", slug)
-      .single();
+    const normalizedSlug = slug === "ring" ? "rings" : slug;
 
-    if (categoryError || !category) {
-      setLoading(false);
-      return;
+    try {
+      // Get category
+      const { data: category, error: categoryError } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("slug", normalizedSlug)
+        .single();
+
+      if (!categoryError && category) {
+        setCollection(category);
+
+        // Get products
+        const { data: productData, error: productError } = await supabase
+          .from("products")
+          .select(`
+            *,
+            categories(name)
+          `)
+          .eq("category_id", category.id);
+
+        if (!productError && productData && productData.length > 0) {
+          setProducts(productData);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase unavailable, fallback to static collection
     }
 
-    setCollection(category);
+    // Static collection fallback
+    const foundCol = collections.find((c) => c.slug === normalizedSlug || c.slug === slug);
+    if (foundCol) {
+      setCollection({
+        id: foundCol.slug,
+        name: foundCol.name,
+        slug: foundCol.slug,
+        image: foundCol.image,
+        tagline: foundCol.tagline,
+      });
 
-    // Get products
-    const { data: productData, error: productError } = await supabase
-      .from("products")
-      .select(`
-        *,
-        categories(name)
-      `)
-      .eq("category_id", category.id);
-
-    if (!productError) {
-      setProducts(productData || []);
+      const matchedProducts = defaultProducts.filter(
+        (p) => p.categories.name.toLowerCase() === foundCol.name.toLowerCase()
+      );
+      setProducts(matchedProducts.length > 0 ? (matchedProducts as any) : (defaultProducts.slice(0, 4) as any));
     }
 
     setLoading(false);

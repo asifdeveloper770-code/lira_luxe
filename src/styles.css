@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -45,8 +46,6 @@
   --gradient-rose: linear-gradient(135deg, oklch(0.65 0.12 25) 0%, oklch(0.78 0.10 30) 100%);
   --gradient-dark: radial-gradient(ellipse at top, oklch(0.18 0.01 60) 0%, oklch(0.06 0 0) 70%);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
   --radius: 0.25rem;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { defaultCategories, defaultProducts } from "@/lib/products";
 import ProductCard from "../components/ProductCard";
 import { Reveal, SectionLabel } from "../components/Reveal";
 
@@ -34,33 +35,41 @@ export default function ShopPage() {
   }, []);
 
   const getProducts = async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select(`
-      *,
-      categories(name)
-    `);
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`
+        *,
+        categories(name)
+      `);
 
-    if (error) {
-      console.error(error);
-      return;
+      if (error || !data || data.length === 0) {
+        setProducts(defaultProducts as any);
+        return;
+      }
+
+      setProducts(data);
+    } catch {
+      setProducts(defaultProducts as any);
     }
-
-    setProducts(data || []);
   };
 
   const getCategories = async () => {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name");
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .order("name");
 
-    if (error) {
-      console.error(error);
-      return;
+      if (error || !data || data.length === 0) {
+        setCategories(defaultCategories);
+        return;
+      }
+
+      setCategories(data);
+    } catch {
+      setCategories(defaultCategories);
     }
-
-    setCategories(data || []);
   };
   const filteredProducts =
     activeFilter === "All"
