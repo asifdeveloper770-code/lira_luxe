@@ -432,16 +432,9 @@ export default function CheckoutPage() {
                 />
               </Elements>
 
-              <div className="pt-4 border-t border-border/60 text-center">
-                <button
-                  type="button"
-                  onClick={handleStripeCheckoutSession}
-                  disabled={isSessionLoading}
-                  className="text-xs text-[#c5a880] hover:underline font-mono uppercase tracking-wider inline-flex items-center gap-1.5"
-                >
-                  <span>Prefer full-screen Stripe Checkout? Click here</span>
-                  <ExternalLink size={12} />
-                </button>
+              <div className="pt-4 border-t border-border/60 flex items-center justify-center gap-2 text-[11px] text-foreground/50 font-mono uppercase tracking-wider">
+                <ShieldCheck size={13} className="text-gold" />
+                <span>Protected by Stripe End-to-End Encryption</span>
               </div>
             </div>
           )}

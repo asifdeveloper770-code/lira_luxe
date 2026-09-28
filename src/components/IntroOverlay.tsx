@@ -1,6 +1,14 @@
+import { useLocation } from "react-router-dom";
 import { Logo } from "./Logo";
 
 export function IntroOverlay() {
+  const location = useLocation();
+
+  // Only run intro on the home page so checkout and other pages are never obscured
+  if (location.pathname !== "/") {
+    return null;
+  }
+
   return (
     <div className="intro-overlay fixed inset-0 z-[100] overflow-hidden pointer-events-none animate-fade-out">
 
