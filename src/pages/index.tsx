@@ -6,9 +6,14 @@ import {
   Truck,
   ShieldCheck,
   Gem,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause,
 } from "lucide-react";
 
 import heroImage from "@/assets/hero-necklace.jpg";
+import heroVideo from "@/assets/video/Lira video.mp4";
 import story from "@/assets/story.jpg";
 
 import {
@@ -16,7 +21,7 @@ import {
   collections,
 } from "@/lib/products";
 // import { getCategories, getCategoryImageUrl } from "@/lib/products";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { collections_product, type Category } from "@/lib/products";
 
 import ProductCard from "@/components/ProductCard";
@@ -45,22 +50,84 @@ function Index() {
 }
 
 function Hero() {
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleSound = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   return (
-    <section className="relative min-h-[100svh] overflow-hidden">
+    <section className="relative min-h-[100svh] overflow-hidden bg-ink">
       <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Lira Fine Jewellery"
-          className="w-full h-full object-cover object-center scale-105"
-        />
+        <video
+          ref={videoRef}
+          autoPlay
+          muted={isMuted}
+          loop
+          playsInline
+          poster={heroImage}
+          onLoadedData={() => setIsVideoLoaded(true)}
+          className={`w-full h-full object-cover object-center scale-105 transition-opacity duration-1000 ${
+            isVideoLoaded ? "opacity-100" : "opacity-90"
+          }`}
+        >
+          <source src="/video/lira-video.mp4" type="video/mp4" />
+          <source src={heroVideo} type="video/mp4" />
+          <img
+            src={heroImage}
+            alt="Lira Fine Jewellery"
+            className="w-full h-full object-cover object-center scale-105"
+          />
+        </video>
+        {/* Luxury cinematic dark overlay gradients */}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-transparent to-ink/40" />
+        <div className="absolute inset-0 backdrop-blur-[0.5px] pointer-events-none" />
       </div>
 
       {/* Floating sparkles */}
       <span className="sparkle absolute top-[22%] left-[12%] w-1.5 h-1.5 bg-gold rounded-full shadow-glow" />
       <span className="sparkle absolute top-[68%] left-[18%] w-1 h-1 bg-gold-soft rounded-full" style={{ animationDelay: "1s" }} />
       <span className="sparkle absolute top-[34%] right-[22%] w-2 h-2 bg-gold rounded-full" style={{ animationDelay: "1.6s" }} />
+
+      {/* Video controls toggle at bottom right */}
+      <div className="absolute bottom-8 right-8 z-20 hidden md:flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={toggleSound}
+          aria-label={isMuted ? "Unmute atmospheric audio" : "Mute audio"}
+          className="w-9 h-9 rounded-full bg-ink/70 border border-gold/40 text-gold hover:border-gold hover:bg-ink transition-all flex items-center justify-center backdrop-blur-md shadow-lg"
+          title={isMuted ? "Sound On" : "Mute"}
+        >
+          {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+        </button>
+        <button
+          type="button"
+          onClick={togglePlay}
+          aria-label={isPlaying ? "Pause video" : "Play video"}
+          className="w-9 h-9 rounded-full bg-ink/70 border border-gold/40 text-gold hover:border-gold hover:bg-ink transition-all flex items-center justify-center backdrop-blur-md shadow-lg"
+          title={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? <Pause size={15} /> : <Play size={15} />}
+        </button>
+      </div>
 
       <div className="container-luxe relative z-10 min-h-[100svh] grid place-items-center pt-28 pb-20">
         <div className="max-w-3xl text-center">

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/components/CartContext";
 import { SectionLabel } from "@/components/Reveal";
 import { stripePromise } from "@/lib/stripe";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { ShieldCheck, Lock, ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
+import { ShieldCheck, Lock, ArrowLeft, Sparkles } from "lucide-react";
 
 interface CustomerForm {
   name: string;
@@ -112,36 +112,26 @@ export default function CheckoutPage() {
   );
 
   const [step, setStep] = useState<"shipping" | "payment">("shipping");
-  const [form, setForm] = useState<CustomerForm>(() => {
-    try {
-      const saved = localStorage.getItem("lira_checkout_customer");
-      return saved
-        ? JSON.parse(saved)
-        : {
-            name: "",
-            email: "",
-            phone: "",
-            address: "",
-            city: "",
-            country: "United States",
-            zip: "",
-          };
-    } catch {
-      return {
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        city: "",
-        country: "United States",
-        zip: "",
-      };
-    }
+  const [form, setForm] = useState<CustomerForm>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    country: "",
+    zip: "",
   });
+
+  useEffect(() => {
+    try {
+      localStorage.removeItem("lira_checkout_customer");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isInitializingPayment, setIsInitializingPayment] = useState(false);
-  const [isSessionLoading, setIsSessionLoading] = useState(false);
   const [formError, setFormError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -171,12 +161,6 @@ export default function CheckoutPage() {
     if (!form.city.trim() || !form.zip.trim()) {
       setFormError("Please enter your city and postal ZIP code.");
       return;
-    }
-
-    try {
-      localStorage.setItem("lira_checkout_customer", JSON.stringify(form));
-    } catch {
-      // ignore
     }
 
     setIsInitializingPayment(true);
@@ -210,46 +194,6 @@ export default function CheckoutPage() {
       setFormError(err.message || "Failed to initialize payment gateway. Please try again.");
     } finally {
       setIsInitializingPayment(false);
-    }
-  };
-
-  const handleStripeCheckoutSession = async () => {
-    if (!form.name || !form.email) {
-      setFormError("Please provide at least your Name and Email to proceed.");
-      return;
-    }
-
-    setIsSessionLoading(true);
-    setFormError("");
-
-    try {
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cart,
-          customer: form,
-        }),
-      });
-
-      const text = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(text || "Checkout service is unreachable. Please verify serverless deployment.");
-      }
-
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Unable to start Stripe Hosted Checkout");
-      }
-
-      // Redirect to Stripe Checkout
-      window.location.href = data.url;
-    } catch (err: any) {
-      console.error(err);
-      setFormError(err.message || "Unable to redirect to Stripe Checkout.");
-      setIsSessionLoading(false);
     }
   };
 
@@ -316,7 +260,7 @@ export default function CheckoutPage() {
                       type="text"
                       name="name"
                       value={form.name}
-                      placeholder="e.g., Eleanor Vance"
+                      placeholder="Enter full name"
                       onChange={handleChange}
                       required
                       className="w-full bg-[#141311] border border-border p-3 text-sm focus:border-gold outline-none transition-colors"
@@ -331,7 +275,7 @@ export default function CheckoutPage() {
                       type="email"
                       name="email"
                       value={form.email}
-                      placeholder="eleanor@example.com"
+                      placeholder="Enter email address"
                       onChange={handleChange}
                       required
                       className="w-full bg-[#141311] border border-border p-3 text-sm focus:border-gold outline-none transition-colors"
@@ -347,7 +291,7 @@ export default function CheckoutPage() {
                     type="tel"
                     name="phone"
                     value={form.phone}
-                    placeholder="+1 (555) 019-2834"
+                    placeholder="Enter phone number"
                     onChange={handleChange}
                     className="w-full bg-[#141311] border border-border p-3 text-sm focus:border-gold outline-none transition-colors"
                   />
@@ -361,7 +305,7 @@ export default function CheckoutPage() {
                     type="text"
                     name="address"
                     value={form.address}
-                    placeholder="740 Park Avenue, Apt 14B"
+                    placeholder="Street address, apartment, suite"
                     onChange={handleChange}
                     required
                     className="w-full bg-[#141311] border border-border p-3 text-sm focus:border-gold outline-none transition-colors"
@@ -377,7 +321,7 @@ export default function CheckoutPage() {
                       type="text"
                       name="city"
                       value={form.city}
-                      placeholder="New York"
+                      placeholder="City"
                       onChange={handleChange}
                       required
                       className="w-full bg-[#141311] border border-border p-3 text-sm focus:border-gold outline-none transition-colors"
@@ -392,7 +336,7 @@ export default function CheckoutPage() {
                       type="text"
                       name="country"
                       value={form.country}
-                      placeholder="United States"
+                      placeholder="Country (e.g. Pakistan, United States)"
                       onChange={handleChange}
                       required
                       className="w-full bg-[#141311] border border-border p-3 text-sm focus:border-gold outline-none transition-colors"
@@ -407,7 +351,7 @@ export default function CheckoutPage() {
                       type="text"
                       name="zip"
                       value={form.zip}
-                      placeholder="10021"
+                      placeholder="Postal / ZIP code"
                       onChange={handleChange}
                       required
                       className="w-full bg-[#141311] border border-border p-3 text-sm focus:border-gold outline-none transition-colors"
@@ -415,25 +359,15 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="pt-4 flex flex-col sm:flex-row gap-3">
+                <div className="pt-4">
                   <button
                     type="submit"
                     disabled={isInitializingPayment}
-                    className="btn-gold flex-1 py-3 text-xs tracking-widest"
+                    className="btn-gold w-full py-3.5 text-xs tracking-widest uppercase font-medium shadow-md transition-all hover:brightness-105"
                   >
                     {isInitializingPayment
                       ? "Connecting to Stripe..."
                       : "Proceed to Payment Option"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleStripeCheckoutSession}
-                    disabled={isSessionLoading}
-                    className="btn-ghost-gold py-3 text-xs tracking-widest inline-flex items-center justify-center gap-1.5"
-                  >
-                    <span>{isSessionLoading ? "Redirecting..." : "Stripe Hosted Page"}</span>
-                    <ExternalLink size={13} />
                   </button>
                 </div>
               </form>
