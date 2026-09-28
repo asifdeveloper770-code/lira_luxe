@@ -191,7 +191,13 @@ export default function CheckoutPage() {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(text || "Payment server is unreachable. Please verify serverless deployment.");
+      }
 
       if (!res.ok || !data.clientSecret) {
         throw new Error(data.error || "Unable to initialize Stripe payment intent.");
@@ -226,7 +232,13 @@ export default function CheckoutPage() {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(text || "Checkout service is unreachable. Please verify serverless deployment.");
+      }
 
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Unable to start Stripe Hosted Checkout");
