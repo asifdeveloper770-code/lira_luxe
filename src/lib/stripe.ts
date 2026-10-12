@@ -1,6 +1,6 @@
 import { loadStripe } from "@stripe/stripe-js";
 
-const userPublicKey = "pk_test_51UKjtnEZenGYkPFs4MK1ryDsi1i3qo4tBIwUxGWzX3brlibtpLKSfTlA7rEzte7Wrij4w2dvv8Covax0jMGOzj1e00Pzq1LqSj";
+const userPublicKey = "pk_live_51UKjtPRDpRbVafPEASYNjjm9zDbwG5v8zJTjjJDNsu0ntSkQKaErMcTrFlVRqrUjcXncL0G76rXaBRykckqcdYzg00Suejf2l8";
 const envPubKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 export const STRIPE_PUBLISHABLE_KEY =

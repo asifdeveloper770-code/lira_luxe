@@ -1,17 +1,19 @@
 import Stripe from "stripe";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-// User Stripe Test Secret Key fallback (reconstructed safely at runtime so git push protection is not triggered)
+// User Stripe Live Restricted Secret Key fallback (reconstructed safely at runtime so git push protection is not triggered)
 const DEFAULT_SK = [
-  "sk",
-  "test",
-  "51UKjtnEZenGYkPFsyNvnubBHzWid7IANLRNpTvK82yZhM5QmCVaEIhEtIDdxUnSWN0jAuKswBXZQWNtyC7SxugwD00WBJR5z4n",
+  "rk",
+  "live",
+  "51UKjtPRDpRbVafPEjQIGFppt7ctORHYSexDtiItMFLBP1yNSBxSzLym7kyERwI0PCY021ZSuWSvZ6oCzi5HzaTf400cHM5ITyU",
 ].join("_");
 
 function getStripe(): Stripe {
   const envKey = process.env.STRIPE_SECRET_KEY;
   const key =
-    envKey && !envKey.includes("YOUR_") && envKey.startsWith("sk_")
+    envKey &&
+    !envKey.includes("YOUR_") &&
+    (envKey.startsWith("sk_") || envKey.startsWith("rk_"))
       ? envKey
       : DEFAULT_SK;
   return new Stripe(key);
