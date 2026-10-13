@@ -1,8 +1,9 @@
-import story from "@/assets/story.jpg";
-import hero from "@/assets/hero-necklace.jpg";
+import { useSiteImage } from "@/lib/site-images";
 import { Reveal, SectionLabel } from "@/components/Reveal";
 
 export default function About() {
+  const hero = useSiteImage("about_hero");
+  const story = useSiteImage("about_story");
   return (
     <div>
       <section className="relative h-[70svh] min-h-[500px] overflow-hidden">
