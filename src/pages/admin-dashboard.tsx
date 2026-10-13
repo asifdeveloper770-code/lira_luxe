@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
+import SiteImagesManager from "@/components/admin/SiteImagesManager";
 
 // Data & Mock Archetypes
 import { mockCartData } from "@/lib/products";
@@ -21,7 +22,7 @@ export default function AdminDashboard() {
     const [authError, setAuthError] = useState("");
     // Application UI states
     const [activeTab, setActiveTab] = useState<
-        "showroom" | "carts" | "orders" | "contact"
+        "showroom" | "carts" | "orders" | "contact" | "images"
     >("showroom");
     const [carts, setCarts] = useState(mockCartData);
     const [orders, setOrders] = useState<any[]>([]);
@@ -573,6 +574,16 @@ export default function AdminDashboard() {
                     >
                         ✦ Cart Intelligence
                     </button>
+
+                    <button
+                        onClick={() => setActiveTab("images")}
+                        className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest transition-all rounded-none border font-mono ${activeTab === "images"
+                            ? "bg-[#c5a880] text-[#0d0d0c] border-[#c5a880]"
+                            : "bg-[#141311] text-[#a8a296] border-[#22201c] hover:border-[#3a352a] hover:text-[#f4efe6]"
+                            }`}
+                    >
+                        ✦ Site Images
+                    </button>
                     <button
                         onClick={() => setActiveTab("contact")}
                         className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest transition-all rounded-none border font-mono ${activeTab === "contact"
@@ -954,6 +965,9 @@ export default function AdminDashboard() {
                             </Card>
                         </div>
                     )}
+
+                    {/* TAB AREA 5: WEBSITE IMAGES */}
+                    {activeTab === "images" && <SiteImagesManager />}
 
                     {/* TAB AREA 3: LIVE CARTS TELEMETRY */}
                     {activeTab === "carts" && (
