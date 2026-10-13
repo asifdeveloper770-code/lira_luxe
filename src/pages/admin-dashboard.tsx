@@ -62,33 +62,71 @@ export default function AdminDashboard() {
     const [successMessage, setSuccessMessage] = useState("");
     const [isCreating, setIsCreating] = useState(false);
 
-    useEffect(() => {
+    // Only users listed in the `admins` table (checked via the is_admin() function) may enter.
+    const verifyAdmin = async (hasSession: boolean) => {
+        if (!hasSession) {
+            setIsAuthenticated(false);
+            return false;
+        }
+
+        const { data, error } = await supabase.rpc("is_admin");
+
+        if (error || data !== true) {
+            if (error) console.error("Admin check error:", error);
+            await supabase.auth.signOut();
+            setIsAuthenticated(false);
+            setAuthError("This account does not have admin access.");
+            return false;
+        }
+
+        setIsAuthenticated(true);
+        return true;
+    };
+
+    const loadDashboardData = () => {
         getCategories();
         getProducts();
         getOrders();
         getContactMessages();
+    };
+
+    useEffect(() => {
         const checkAuth = async () => {
             const {
                 data: { session },
             } = await supabase.auth.getSession();
 
-            setIsAuthenticated(!!session);
+            await verifyAdmin(!!session);
         };
 
         checkAuth();
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setIsAuthenticated(!!session);
+        } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === "SIGNED_OUT" || !session) {
+                setIsAuthenticated(false);
             }
-        );
+        });
 
         return () => {
             subscription.unsubscribe();
         };
     }, []);
+
+    // Load orders, products, etc. only after the admin is verified
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadDashboardData();
+        }
+    }, [isAuthenticated]);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setIsAuthenticated(false);
+        setOrders([]);
+        setContactMessages([]);
+    };
 
     const uploadImage = async (file: File) => {
         const fileName = `${Date.now()}-${file.name}`;
@@ -169,14 +207,19 @@ export default function AdminDashboard() {
         setAuthError("");
 
         if (!email || !password) {
-            setAuthError("Please enter your email and password.");
+            setAuthError("Please enter your username and password.");
             return;
         }
 
         setIsLoading(true);
 
+        // Username "admin" maps to the admin@liraluxe.com account in Supabase Auth.
+        const loginEmail = email.includes("@")
+            ? email.trim()
+            : `${email.trim().toLowerCase()}@liraluxe.com`;
+
         const { data, error } = await supabase.auth.signInWithPassword({
-            email,
+            email: loginEmail,
             password,
         });
 
@@ -184,13 +227,13 @@ export default function AdminDashboard() {
 
         if (error) {
             console.error("Admin login error:", error);
-            setAuthError("Invalid email or password.");
+            setAuthError("Invalid username or password.");
             return;
         }
 
-        if (data.user) {
-            setIsAuthenticated(true);
+        if (data.session) {
             setAuthError("");
+            await verifyAdmin(true);
         }
     };
 
@@ -460,8 +503,9 @@ export default function AdminDashboard() {
                         <h1 className="font-serif text-2xl tracking-wider mb-6">Atelier Vault Gate</h1>
                         <form onSubmit={handleLogin} className="space-y-4">
                             <Input
-                                type="email"
-                                placeholder="Email"
+                                type="text"
+                                autoComplete="username"
+                                placeholder="Username"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="bg-[#1c1a17] border-[#3a352a] text-[#f4efe6] rounded-none text-center tracking-widest placeholder-[#6e6555] focus-visible:ring-[#c5a880]"
@@ -552,7 +596,7 @@ export default function AdminDashboard() {
                     </button>
 
                     <div className="mt-auto pt-6">
-                        <Button variant="outline" onClick={() => setIsAuthenticated(false)} className="w-full border-[#3a352a] text-[#a8a296] hover:bg-[#1c1a17] hover:text-red-400 rounded-none text-xs tracking-wider uppercase font-mono">
+                        <Button variant="outline" onClick={handleLogout} className="w-full border-[#3a352a] text-[#a8a296] hover:bg-[#1c1a17] hover:text-red-400 rounded-none text-xs tracking-wider uppercase font-mono">
                             Lock Terminal
                         </Button>
                     </div>
