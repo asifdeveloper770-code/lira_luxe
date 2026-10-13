@@ -43,14 +43,18 @@ export default function CollectionPage() {
     setLoading(true);
 
     const normalizedSlug = slug === "ring" ? "rings" : slug;
+    // Rings can be saved in the database as either "ring" or "rings", so look for both
+    const slugCandidates =
+      normalizedSlug === "rings" ? ["rings", "ring"] : [slug as string];
 
     try {
       // Get category
       const { data: category, error: categoryError } = await supabase
         .from("categories")
         .select("*")
-        .eq("slug", normalizedSlug)
-        .single();
+        .in("slug", slugCandidates)
+        .limit(1)
+        .maybeSingle();
 
       if (!categoryError && category) {
         setCollection(category);
