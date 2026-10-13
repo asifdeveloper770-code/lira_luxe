@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useSiteImages } from "@/lib/site-images";
 import { collections, defaultProducts } from "@/lib/products";
 
 import ProductCard from "../components/ProductCard";
@@ -30,6 +31,7 @@ export default function CollectionPage() {
   const { slug } = useParams();
 
   const [collection, setCollection] = useState<Category | null>(null);
+  const { overrides: siteImages } = useSiteImages();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,14 +125,21 @@ export default function CollectionPage() {
     );
   }
 
+  // Admin can set a dedicated banner per collection from the dashboard ("Site Images")
+  const bannerSlug = collection.slug === "ring" ? "rings" : collection.slug;
+  const bannerImage =
+    siteImages[`collection_banner_${bannerSlug}`] ||
+    siteImages[`category_${bannerSlug}`] ||
+    collection.image;
+
   return (
     <div>
       <section className="relative w-full overflow-hidden bg-black flex flex-col justify-center items-center">
 
         {/* 1. Background Image - Set to object-contain so the FULL image is visible */}
-        {collection.image && (
+        {bannerImage && (
           <img
-            src={collection.image}
+            src={bannerImage}
             alt={collection.name}
             className="w-full max-h-[65vh] object-cover z-0 block mx-auto"
           />
