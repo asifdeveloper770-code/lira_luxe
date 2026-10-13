@@ -12,14 +12,10 @@ import {
   Pause,
 } from "lucide-react";
 
-import heroImage from "@/assets/hero-necklace.jpg";
 import heroVideo from "@/assets/video/Lira video.mp4";
-import story from "@/assets/story.jpg";
+import { useSiteImage, useSiteImages, VIDEO_OFF } from "@/lib/site-images";
 
-import {
-  bestSellers,
-  collections,
-} from "@/lib/products";
+import { bestSellers } from "@/lib/products";
 // import { getCategories, getCategoryImageUrl } from "@/lib/products";
 import { useEffect, useState, useRef } from "react";
 import { collections_product, type Category } from "@/lib/products";
@@ -55,6 +51,11 @@ function Hero() {
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const heroImage = useSiteImage("home_hero");
+  const { overrides } = useSiteImages();
+  const customVideo = overrides["home_hero_video"];
+  const videoOff = customVideo === VIDEO_OFF;
+
   const toggleSound = () => {
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
@@ -76,7 +77,15 @@ function Hero() {
   return (
     <section className="relative min-h-[100svh] overflow-hidden bg-ink">
       <div className="absolute inset-0">
+        {videoOff ? (
+          <img
+            src={heroImage}
+            alt="Lira Fine Jewellery"
+            className="w-full h-full object-cover object-center scale-105"
+          />
+        ) : (
         <video
+          key={customVideo || "default-video"}
           ref={videoRef}
           autoPlay
           muted={isMuted}
@@ -88,14 +97,21 @@ function Hero() {
             isVideoLoaded ? "opacity-100" : "opacity-90"
           }`}
         >
-          <source src="/video/lira-video.mp4" type="video/mp4" />
-          <source src={heroVideo} type="video/mp4" />
+          {customVideo ? (
+            <source src={customVideo} />
+          ) : (
+            <>
+              <source src="/video/lira-video.mp4" type="video/mp4" />
+              <source src={heroVideo} type="video/mp4" />
+            </>
+          )}
           <img
             src={heroImage}
             alt="Lira Fine Jewellery"
             className="w-full h-full object-cover object-center scale-105"
           />
         </video>
+        )}
         {/* Luxury cinematic dark overlay gradients */}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-transparent to-ink/40" />
@@ -108,7 +124,7 @@ function Hero() {
       <span className="sparkle absolute top-[34%] right-[22%] w-2 h-2 bg-gold rounded-full" style={{ animationDelay: "1.6s" }} />
 
       {/* Video controls toggle at bottom right */}
-      <div className="absolute bottom-8 right-8 z-20 hidden md:flex items-center gap-2.5">
+      <div className={`absolute bottom-8 right-8 z-20 hidden ${videoOff ? "" : "md:flex"} items-center gap-2.5`}>
         <button
           type="button"
           onClick={toggleSound}
@@ -180,6 +196,11 @@ function Marquee() {
   );
 }
 
+function CollectionCardImage({ slug, fallback, alt }: { slug: string; fallback: string; alt: string }) {
+  const custom = useSiteImages().overrides[`category_${slug}`];
+  return <img src={custom || fallback} alt={alt} loading="lazy" className="w-full h-full object-cover" />;
+}
+
 export function Collections() {
   return (
     <section className="container-luxe py-5 sm:py-28 md:py-10">
@@ -195,7 +216,7 @@ export function Collections() {
           <Reveal key={c.slug} delay={i * 90}>
             <Link to={`/collections/${c.slug}`} className="group block product-card">
               <div className="img-wrap relative aspect-[3/4] bg-secondary">
-                <img src={(c.image)} alt={c.name} loading="lazy" className="w-full h-full object-cover" />
+                <CollectionCardImage slug={c.slug} fallback={c.image} alt={c.name} />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-5 text-center">
                   <p className="text-[10px] tracking-[0.32em] uppercase text-gold/80">{c.tagline}</p>
@@ -246,6 +267,7 @@ function BestSellers() {
 }
 
 function Story() {
+  const story = useSiteImage("home_story");
   return (
     <section className="relative py-20 sm:py-28 md:py-44 overflow-hidden">
       <div className="absolute inset-0 gradient-dark-bg" />
@@ -352,12 +374,12 @@ function Testimonials() {
 }
 function Gallery() {
   const imgs = [
-    bestSellers[0].image,
-    bestSellers[2].image,
-    bestSellers[1].image,
-    bestSellers[3].image,
-    collections[1].image,
-    collections[2].image,
+    useSiteImage("gallery_1"),
+    useSiteImage("gallery_2"),
+    useSiteImage("gallery_3"),
+    useSiteImage("gallery_4"),
+    useSiteImage("gallery_5"),
+    useSiteImage("gallery_6"),
   ];
 
   const sizes = [
