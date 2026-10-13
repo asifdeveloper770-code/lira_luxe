@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import logo from "@/assets/lira2.png";
+import { useSiteImage } from "@/lib/site-images";
 
 export function Logo({
   className = "",
 }: {
   className?: string;
 }) {
+  const logo = useSiteImage("logo");
   return (
     <Link
       to="/"
