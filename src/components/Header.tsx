@@ -46,7 +46,7 @@ export function Header() {
           ))}
         </div>
 
-        <Logo className="lg:mx-auto w-[120px] h-auto" />
+        <Logo className="lg:mx-auto w-[135px] sm:w-[150px] lg:w-[170px] h-auto" />
 
         <div className="flex lg:flex-1 items-center justify-end gap-3 sm:gap-5">
           <div className="hidden lg:flex items-center gap-5 xl:gap-7 text-[11px] tracking-[0.22em] uppercase text-foreground/80">
