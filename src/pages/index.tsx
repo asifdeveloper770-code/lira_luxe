@@ -398,8 +398,8 @@ function Gallery() {
     "col-span-1 row-span-2",
     "col-span-1 row-span-2",
     "col-span-1 row-span-2 md:col-span-3 md:row-span-3",
-    "col-span-1 row-span-2",
-    "col-span-1 row-span-2 md:col-span-3 md:row-span-1",
+    "col-span-1 row-span-2 md:row-span-3",
+    "col-span-1 row-span-2 md:col-span-3 md:row-span-2",
   ];
 
   return (
