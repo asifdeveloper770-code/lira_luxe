@@ -108,10 +108,10 @@ export const defaultProducts = [
 ];
 
 export const bestSellers: Product[] = [
-  { id: "1", name: "Soleil Pavé Hoops", category: "Earrings", price: 1280, image: p1, tag: "New" },
-  { id: "2", name: "Étoile Solitaire", category: "Necklaces", price: 1850, image: p2 },
-  { id: "3", name: "Aurore Tennis", category: "Bracelets", price: 2640, image: p3, tag: "Bestseller" },
-  { id: "4", name: "Rubis de Lira", category: "Rings", price: 3420, image: p4, tag: "Limited" },
+  { id: "1", name: "Soleil Pavé Hoops", category_id: "cat-1", categories: { name: "Earrings" }, price: 1280, image: p1, tag: "New" },
+  { id: "2", name: "Étoile Solitaire", category_id: "cat-2", categories: { name: "Necklaces" }, price: 1850, image: p2 },
+  { id: "3", name: "Aurore Tennis", category_id: "cat-3", categories: { name: "Bracelets" }, price: 2640, image: p3, tag: "Bestseller" },
+  { id: "4", name: "Rubis de Lira", category_id: "cat-4", categories: { name: "Rings" }, price: 3420, image: p4, tag: "Limited" },
 ];
 
 // Mock data tracking luxury carts currently active across users
