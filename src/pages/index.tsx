@@ -113,9 +113,9 @@ function Hero() {
         </video>
         )}
         {/* Luxury cinematic dark overlay gradients */}
-        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/70" />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-transparent to-ink/40" />
-        <div className="absolute inset-0 backdrop-blur-[0.5px] pointer-events-none" />
+        {/* Lighter overlay so the video stays clearly visible; bottom fade blends into the next section */}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-ink/35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/35 via-transparent to-ink/20" />
       </div>
 
       {/* Floating sparkles */}
@@ -153,13 +153,13 @@ function Hero() {
             <span className="w-10 h-px bg-gold/70" />
           </div>
 
-          <h1 className="mt-6 sm:mt-8 font-serif fluid-display tracking-tight">
+          <h1 className="mt-6 sm:mt-8 font-serif fluid-display tracking-tight [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
             <span className="block text-foreground">The art of</span>
             <span className="block italic shimmer-text">éternité</span>
             <span className="block text-foreground">in 18k gold.</span>
           </h1>
 
-          <p className="mt-6 sm:mt-8 mx-auto max-w-xl fluid-lead text-foreground/75 px-2">
+          <p className="mt-6 sm:mt-8 mx-auto max-w-xl fluid-lead text-foreground/85 px-2 [text-shadow:0_1px_14px_rgba(0,0,0,0.9)]">
             Heirloom jewellery and luxury accessories — sculpted by hand in our Parisian
             atelier, set with conflict-free gemstones from a single house.
           </p>
