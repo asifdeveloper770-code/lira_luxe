@@ -234,6 +234,13 @@ export function Collections() {
 }
 
 function BestSellers() {
+  // Images can be replaced by the admin (Site Images → "Home · Bestsellers")
+  const { overrides } = useSiteImages();
+  const items = bestSellers.map((p, i) => ({
+    ...p,
+    image: overrides[`bestseller_${i + 1}`] || p.image,
+  }));
+
   return (
     <section className="container-luxe py-20 sm:py-28 md:py-36">
       <Reveal className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
@@ -251,12 +258,12 @@ function BestSellers() {
 
       {/* Mobile: horizontal swipe rail · Tablet+: grid */}
       <div className="mt-12 sm:mt-16  scrollbar-luxe sm:hidden">
-        {bestSellers.map((p) => (
+        {items.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
       </div>
       <div className="hidden sm:grid mt-16 grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10">
-        {bestSellers.map((p, i) => (
+        {items.map((p, i) => (
           <Reveal key={p.id} delay={i * 90}>
             <ProductCard product={p} />
           </Reveal>
@@ -380,15 +387,19 @@ function Gallery() {
     useSiteImage("gallery_4"),
     useSiteImage("gallery_5"),
     useSiteImage("gallery_6"),
+    useSiteImage("gallery_7"),
   ];
 
+  // Mobile (2 cols): 1 large + 3 rows of 2 · Desktop (4 cols): image 7 fills the
+  // wide gap next to image 6 so the grid has no empty space.
   const sizes = [
-    "row-span-2 col-span-2",
-    "row-span-2 col-span-1",
-    "row-span-2 col-span-1",
-    "row-span-2 col-span-1",
-    "row-span-3 col-span-3",
-    "row-span-2 col-span-",
+    "col-span-2 row-span-2",
+    "col-span-1 row-span-2",
+    "col-span-1 row-span-2",
+    "col-span-1 row-span-2",
+    "col-span-1 row-span-2 md:col-span-3 md:row-span-3",
+    "col-span-1 row-span-2",
+    "col-span-1 row-span-2 md:col-span-3 md:row-span-1",
   ];
 
   return (
@@ -412,7 +423,8 @@ function Gallery() {
               src={src}
               alt="instagram"
               loading="lazy"
-              className="w-full h-full object-cover bg-black transition-transform duration-700 group-hover:scale-105"
+              style={{ height: "100%" }}
+              className="absolute inset-0 w-full h-full object-cover bg-black transition-transform duration-700 group-hover:scale-105"
             />
 
             <div className="absolute inset-0 bg-ink/10 group-hover:bg-ink/60 transition-all duration-500 flex items-center justify-center">
