@@ -13,6 +13,7 @@ import necklaces from "@/assets/cat-necklaces.jpg";
 import bracelets from "@/assets/cat-bracelets.jpg";
 import rings from "@/assets/cat-rings.jpg";
 import belts from "@/assets/cat-belts.jpg";
+import galleryWide from "@/assets/Ring banner.png";
 import { bestSellers, collections } from "@/lib/products";
 
 export const SITE_IMAGES_BUCKET = "site-images";
@@ -56,6 +57,7 @@ const galleryDefaults = [
   bestSellers[3]?.image,
   collections[1]?.image,
   collections[2]?.image,
+  galleryWide,
 ] as string[];
 
 export const SITE_IMAGE_SLOTS: SiteImageSlot[] = [
@@ -102,7 +104,17 @@ export const SITE_IMAGE_SLOTS: SiteImageSlot[] = [
     section: "Home · Gallery (The muse, in the wild)",
     kind: "image" as const,
     defaultUrl: url,
-    aspect: "aspect-square",
+    hint: i === 6 ? "Wide strip at the bottom of the gallery. Landscape works best." : undefined,
+    aspect: i === 6 ? "aspect-[3/1]" : "aspect-square",
+  })),
+  ...bestSellers.map((p, i) => ({
+    key: `bestseller_${i + 1}`,
+    label: `Bestseller ${i + 1} · ${p.name}`,
+    section: "Home · Bestsellers (Coveted Pieces)",
+    kind: "image" as const,
+    defaultUrl: p.image,
+    hint: "Portrait 4:5",
+    aspect: "aspect-[4/5]",
   })),
   {
     key: "home_story",
