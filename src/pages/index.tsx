@@ -114,8 +114,7 @@ function Hero() {
         )}
         {/* Luxury cinematic dark overlay gradients */}
         {/* Lighter overlay so the video stays clearly visible; bottom fade blends into the next section */}
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-ink/35" />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/35 via-transparent to-ink/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-ink/20" />
       </div>
 
       {/* Floating sparkles */}
