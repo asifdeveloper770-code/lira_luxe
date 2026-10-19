@@ -20,16 +20,16 @@ export function Footer() {
         </div>
 
         <FooterCol title="Maison" links={[
-          { label: "Our Story", to: "/about" },
-          { label: "Craftsmanship", to: "/about" },
-          { label: "Sustainability", to: "/about" },
-          { label: "Journal", to: "/about" },
+          { label: "Our Story", to: "/about#story" },
+          { label: "Craftsmanship", to: "/about#craftsmanship" },
+          { label: "Sustainability", to: "/about#sustainability" },
+          { label: "Journal", to: "/about#journal" },
         ]} />
         <FooterCol title="Boutique" links={[
           { label: "Earrings", to: "/collections/earrings" },
           { label: "Necklaces", to: "/collections/necklaces" },
           { label: "Bracelets", to: "/collections/bracelets" },
-          { label: "Rings", to: "/collections/rings" },
+          { label: "Rings", to: "/collections/ring" },
           { label: "Beaded Belts", to: "/collections/belts" },
         ]} />
         <FooterCol title="Client Care" links={[
