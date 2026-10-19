@@ -464,6 +464,9 @@ export default function CheckoutPage() {
                     <p className="font-serif text-sm text-foreground truncate">
                       {item.name}
                     </p>
+                    {item.size && (
+                      <p className="text-xs text-foreground/60">Size: {item.size}</p>
+                    )}
                     <p className="text-xs text-foreground/60 font-mono">
                       Qty: {item.quantity} × ${item.price.toLocaleString()}
                     </p>
