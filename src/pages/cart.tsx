@@ -109,6 +109,11 @@ export default function CartPage() {
                       <h3 className="mt-1 font-serif text-2xl">
                         {p.name}
                       </h3>
+                      {p.size && (
+                        <p className="mt-1 text-xs tracking-[0.2em] uppercase text-foreground/60">
+                          Size: {p.size}
+                        </p>
+                      )}
                     </div>
 
                     <button onClick={() => removeFromCart(p.id)}>
