@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
 import { Logo } from "./Logo";
@@ -19,6 +20,25 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { cart } = useCart();
+  const location = useLocation();
+
+  // Close the menu whenever the page changes
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname, location.hash]);
+
+  // Stop the page behind the menu from scrolling while it is open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   // Total quantity of all items
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
@@ -31,6 +51,7 @@ export function Header() {
   }, []);
 
   return (
+    <>
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${scrolled
         ? "bg-background/85 backdrop-blur-xl border-b border-border"
@@ -82,31 +103,42 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      <div
-        className={`fixed inset-0 z-[60] bg-background/98 backdrop-blur-2xl transition-all duration-500 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-      >
-        <div className="container-luxe flex items-center justify-between py-5">
-          <Logo />
-          <button aria-label="Close" onClick={() => setOpen(false)} className="text-gold">
-            <X size={22} strokeWidth={1.4} />
-          </button>
-        </div>
-        <nav className="container-luxe pt-8 sm:pt-12 flex flex-col gap-5 sm:gap-7 max-h-[calc(100svh-6rem)] overflow-y-auto scrollbar-luxe">
-          {nav.map((n, i) => (
-            <Link
-              key={n.to} to={n.to as any}
-              onClick={() => setOpen(false)}
-              className="font-serif text-2xl sm:text-3xl gradient-gold-text"
-              style={{ transitionDelay: `${i * 60}ms` }}
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-      </div>
     </header>
+      {/* Mobile menu — rendered on <body> (portal). Inside the header, the header's
+            backdrop-blur trapped this "fixed" layer, so it scrolled with the page and
+            the gold links ended up on top of the product listing. */}
+        {typeof document !== "undefined" &&
+          createPortal(
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-hidden={!open}
+              className={`fixed inset-0 z-[100] h-[100dvh] bg-background overflow-hidden transition-opacity duration-500 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                }`}
+            >
+              <div className="container-luxe flex items-center justify-between py-5 border-b border-border">
+                <Logo className="w-[135px] sm:w-[150px] h-auto" />
+                <button aria-label="Close" onClick={() => setOpen(false)} className="text-gold p-2 -m-2">
+                  <X size={22} strokeWidth={1.4} />
+                </button>
+              </div>
+              <nav className="container-luxe pt-8 sm:pt-12 pb-12 flex flex-col gap-5 sm:gap-7 h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain scrollbar-luxe">
+                {nav.map((n, i) => (
+                  <Link
+                    key={n.to} to={n.to as any}
+                    onClick={() => setOpen(false)}
+                    tabIndex={open ? 0 : -1}
+                    className="font-serif text-2xl sm:text-3xl gradient-gold-text"
+                    style={{ transitionDelay: `${i * 60}ms` }}
+                  >
+                    {n.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>,
+            document.body,
+          )}
+    </>
   );
 }
 export default Header;
