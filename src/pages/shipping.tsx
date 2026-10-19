@@ -1,12 +1,11 @@
-import { createFileRoute } from "react-router-dom";
+import { useEffect } from "react";
 import { SectionLabel } from "@/components/Reveal";
 
-export const Route = createFileRoute("/shipping")({
-  head: () => ({ meta: [{ title: "Shipping — Lira Fashion" }] }),
-  component: Shipping,
-});
 
 function Shipping() {
+  useEffect(() => {
+    document.title = "Shipping — Lira Fashion";
+  }, []);
   return (
     <div className="pt-32 pb-24 container-luxe max-w-3xl">
       <div className="text-center">
@@ -21,3 +20,5 @@ function Shipping() {
     </div>
   );
 }
+
+export default Shipping;
