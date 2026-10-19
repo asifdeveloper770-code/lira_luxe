@@ -12,6 +12,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 import SiteImagesManager from "@/components/admin/SiteImagesManager";
+import CatalogTools from "@/components/admin/CatalogTools";
+import { Textarea } from "@/components/ui/textarea";
+import { RING_SIZE_PRESET, parseSizes, skuNumber } from "@/lib/catalog";
 
 // Data & Mock Archetypes
 import { mockCartData } from "@/lib/products";
@@ -48,6 +51,48 @@ export default function AdminDashboard() {
     const [categoryId, setCategoryId] = useState("");
     const [price, setPrice] = useState("");
     const [tag, setTag] = useState("");
+    const [sku, setSku] = useState("");
+    const [description, setDescription] = useState("");
+    const [sizesText, setSizesText] = useState("");
+    // Extra photos of the same piece (gallery) — already-saved URLs + newly picked files
+    const [extraImages, setExtraImages] = useState<string[]>([]);
+    const [extraFiles, setExtraFiles] = useState<File[]>([]);
+
+    const resetProductForm = () => {
+        setEditingProduct(null);
+        setName("");
+        setPrice("");
+        setTag("");
+        setSku("");
+        setDescription("");
+        setSizesText("");
+        setExtraImages([]);
+        setExtraFiles([]);
+        setPreview("");
+        setImageFile(null);
+        for (const id of ["product-image-input", "product-extra-images-input"]) {
+            const el = document.getElementById(id) as HTMLInputElement | null;
+            if (el) el.value = "";
+        }
+    };
+
+    // Shared fields for create + update
+    const buildProductFields = async () => {
+        const uploadedExtras: string[] = [];
+        for (const f of extraFiles) {
+            uploadedExtras.push(await uploadImage(f));
+        }
+        return {
+            name: name.trim(),
+            price: Number(price),
+            category_id: categoryId,
+            tag: tag.trim() || null,
+            sku: sku.trim() || null,
+            description: description.trim() || null,
+            sizes: parseSizes(sizesText),
+            images: [...extraImages, ...uploadedExtras],
+        };
+    };
     interface Category {
         id: string;
         name: string;
@@ -182,7 +227,10 @@ export default function AdminDashboard() {
             return;
         }
 
-        setProducts(data || []);
+        // A1, A2 … A424 in catalogue order
+        setProducts(
+            (data || []).sort((a: any, b: any) => skuNumber(a.sku) - skuNumber(b.sku))
+        );
     };
     const getContactMessages = async () => {
         const { data, error } = await supabase
@@ -261,10 +309,7 @@ export default function AdminDashboard() {
             const { error } = await supabase
                 .from("products")
                 .insert({
-                    name: name.trim(),
-                    price: Number(price),
-                    category_id: categoryId,
-                    tag: tag.trim() || null,
+                    ...(await buildProductFields()),
                     image: imageUrl || null,
                 });
 
@@ -277,25 +322,12 @@ export default function AdminDashboard() {
             await getProducts();
 
             // Clear form
-            setName("");
-            setPrice("");
-            setTag("");
-            setCategoryId("");
-            setImageFile(null);
-            setPreview("");
-
-            // Clear file input manually
-            const fileInput = document.getElementById(
-                "product-image-input"
-            ) as HTMLInputElement | null;
-
-            if (fileInput) {
-                fileInput.value = "";
-            }
+            const createdName = name;
+            resetProductForm();
 
             // Show success message
             setSuccessMessage(
-                `"${name}" has been added successfully to the showroom.`
+                `"${createdName}" has been added successfully to the showroom.`
             );
 
             // Automatically hide message after 4 seconds
@@ -303,8 +335,9 @@ export default function AdminDashboard() {
                 setSuccessMessage("");
             }, 4000);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to create product:", error);
+            setAuthError(`Failed to add product: ${error?.message || "Unknown error"}`);
         } finally {
             setIsCreating(false);
         }
@@ -319,9 +352,19 @@ export default function AdminDashboard() {
         setTag(product.tag || "");
         setPreview(product.image || "");
         setImageFile(null);
+        setSku(product.sku || "");
+        setDescription(product.description || "");
+        setSizesText((product.sizes || []).join(", "));
+        setExtraImages(product.images || []);
+        setExtraFiles([]);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const deleteProduct = async (id: string) => {
+        const target = products.find((p) => p.id === id);
+        if (!window.confirm(`Delete "${target?.name ?? "this product"}"${target?.sku ? ` (${target.sku})` : ""}? This cannot be undone.`)) {
+            return;
+        }
 
         const { error } = await supabase
             .from("products")
@@ -353,10 +396,7 @@ export default function AdminDashboard() {
             const { data, error } = await supabase
                 .from("products")
                 .update({
-                    name: name.trim(),
-                    price: Number(price),
-                    category_id: categoryId,
-                    tag: tag.trim() || null,
+                    ...(await buildProductFields()),
                     updated_at: new Date().toISOString(),
                     image: imageUrl,
                 })
@@ -376,24 +416,10 @@ export default function AdminDashboard() {
             await getProducts();
 
             // Success message
-            setSuccessMessage(`"${name}" updated successfully.`);
+            setSuccessMessage(`"${data?.name ?? "Product"}" updated successfully.`);
 
             // Reset edit state
-            setEditingProduct(null);
-            setName("");
-            setPrice("");
-            setCategoryId("");
-            setTag("");
-            setPreview("");
-            setImageFile(null);
-
-            const fileInput = document.getElementById(
-                "product-image-input"
-            ) as HTMLInputElement | null;
-
-            if (fileInput) {
-                fileInput.value = "";
-            }
+            resetProductForm();
 
             setTimeout(() => {
                 setSuccessMessage("");
@@ -416,6 +442,10 @@ export default function AdminDashboard() {
         tag?: string;
         image?: string;
         category_id: string;
+        sku?: string | null;
+        description?: string | null;
+        sizes?: string[] | null;
+        images?: string[] | null;
     }
     const [products, setProducts] = useState<Product[]>([]);
 
@@ -444,6 +474,7 @@ export default function AdminDashboard() {
 
         const matchesSearch =
             p.name.toLowerCase().includes(search) ||
+            (p.sku ?? "").toLowerCase().includes(search) ||
             (p.tag ?? "").toLowerCase().includes(search);
 
         const matchesCategory =
@@ -649,6 +680,10 @@ export default function AdminDashboard() {
                                             <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Item Headline</label>
                                             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Aurelia Cuff" className="bg-[#1c1a17] border-[#22201c] rounded-none text-sm focus-visible:ring-[#c5a880]" />
                                         </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">SKU / Item No.</label>
+                                            <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g., A309" className="bg-[#1c1a17] border-[#22201c] rounded-none text-sm focus-visible:ring-[#c5a880]" />
+                                        </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Category</label>
@@ -702,6 +737,73 @@ export default function AdminDashboard() {
                                             <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Curated Flag Tag</label>
                                             <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g., Limited" className="bg-[#1c1a17] border-[#22201c] rounded-none text-sm focus-visible:ring-[#c5a880]" />
                                         </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Description</label>
+                                            <Textarea
+                                                value={description}
+                                                onChange={(e) => setDescription(e.target.value)}
+                                                rows={5}
+                                                placeholder="Handmade & Designed by Lira Fashion…"
+                                                className="bg-[#1c1a17] border-[#22201c] rounded-none text-sm focus-visible:ring-[#c5a880]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block">Sizes (comma separated)</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSizesText(RING_SIZE_PRESET.join(", "))}
+                                                    className="text-[10px] uppercase tracking-wider text-[#c5a880] hover:underline"
+                                                >
+                                                    Ring sizes 5–10
+                                                </button>
+                                            </div>
+                                            <Input value={sizesText} onChange={(e) => setSizesText(e.target.value)} placeholder="e.g., 6, 7, 8, 9 — leave empty if no size" className="bg-[#1c1a17] border-[#22201c] rounded-none text-sm focus-visible:ring-[#c5a880]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase text-[#a8a296] tracking-wider block mb-1">Extra Photos (same piece)</label>
+                                            <input
+                                                id="product-extra-images-input"
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={(e) => {
+                                                    const files = Array.from(e.target.files || []);
+                                                    if (files.length) setExtraFiles((prev) => [...prev, ...files]);
+                                                    e.target.value = "";
+                                                }}
+                                            />
+                                            {(extraImages.length > 0 || extraFiles.length > 0) && (
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {extraImages.map((url) => (
+                                                        <div key={url} className="relative">
+                                                            <img src={url} alt="" className="w-16 h-16 object-cover border border-[#22201c]" />
+                                                            <button
+                                                                type="button"
+                                                                aria-label="Remove photo"
+                                                                onClick={() => setExtraImages((prev) => prev.filter((u) => u !== url))}
+                                                                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px]"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {extraFiles.map((f, i) => (
+                                                        <div key={f.name + i} className="relative">
+                                                            <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 object-cover border border-[#c5a880]/50" />
+                                                            <button
+                                                                type="button"
+                                                                aria-label="Remove photo"
+                                                                onClick={() => setExtraFiles((prev) => prev.filter((_, j) => j !== i))}
+                                                                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px]"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                         <Button
                                             type="submit"
                                             disabled={isCreating}
@@ -719,23 +821,7 @@ export default function AdminDashboard() {
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                onClick={() => {
-                                                    setEditingProduct(null);
-                                                    setName("");
-                                                    setPrice("");
-                                                    setCategoryId("");
-                                                    setTag("");
-                                                    setPreview("");
-                                                    setImageFile(null);
-
-                                                    const fileInput = document.getElementById(
-                                                        "product-image-input"
-                                                    ) as HTMLInputElement | null;
-
-                                                    if (fileInput) {
-                                                        fileInput.value = "";
-                                                    }
-                                                }}
+                                                onClick={resetProductForm}
                                                 className="w-full border-[#3a352a] text-[#a8a296] rounded-none hover:bg-[#1c1a17]"
                                             >
                                                 Cancel Edit
@@ -744,6 +830,16 @@ export default function AdminDashboard() {
                                     </form>
                                 </CardContent>
                             </Card>
+
+                            {/* Bulk tools: raise prices, import A309–A424 from CSV, add ring sizes */}
+                            <div className="lg:col-span-3 order-last">
+                                <CatalogTools
+                                    products={products}
+                                    categories={categories as any}
+                                    uploadImage={uploadImage}
+                                    onChanged={getProducts}
+                                />
+                            </div>
 
                             {/* Showroom Data Table Output */}
                             <Card className="lg:col-span-2 bg-[#141311] border-[#22201c] text-[#f4efe6] rounded-none flex flex-col">
@@ -785,6 +881,7 @@ export default function AdminDashboard() {
                                             <TableHeader className="border-b border-[#22201c]">
                                                 <TableRow className="hover:bg-transparent border-none">
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Item Details</TableHead>
+                                                    <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">SKU</TableHead>
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Category</TableHead>
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Name</TableHead>
                                                     <TableHead className="text-[#a8a296] uppercase text-[10px] tracking-wider">Price</TableHead>
@@ -804,8 +901,16 @@ export default function AdminDashboard() {
                                                                 }}
                                                             />
                                                         </TableCell>
+                                                        <TableCell className="text-[10px] tracking-wide uppercase font-mono text-[#c5a880]">{p.sku || "—"}</TableCell>
                                                         <TableCell className="text-[10px] tracking-wide uppercase font-mono text-[#a8a296]">{p.categories?.name}</TableCell>
-                                                        <TableCell className="text-[10px] tracking-wide uppercase font-mono text-[#a8a296]">{p.name}</TableCell>
+                                                        <TableCell className="text-[10px] tracking-wide uppercase font-mono text-[#a8a296]">
+                                                            {p.name}
+                                                            <div className="mt-1 normal-case tracking-normal text-[9px] text-[#6e6555]">
+                                                                {p.description ? "✓ description" : "⚠ no description"}
+                                                                {(p.sizes?.length ?? 0) > 0 && ` · sizes ${p.sizes!.join("/")}`}
+                                                                {(p.images?.length ?? 0) > 0 && ` · +${p.images!.length} photos`}
+                                                            </div>
+                                                        </TableCell>
                                                         <TableCell className="font-serif text-xs text-[#c5a880]">${p.price.toLocaleString()}</TableCell>
 
                                                         <TableCell>
@@ -828,7 +933,7 @@ export default function AdminDashboard() {
                                                 ))}
                                                 {currentProductsPage.length === 0 && (
                                                     <TableRow>
-                                                        <TableCell colSpan={4} className="text-center py-8 text-xs italic text-[#6e6555] font-serif">
+                                                        <TableCell colSpan={7} className="text-center py-8 text-xs italic text-[#6e6555] font-serif">
                                                             No items match your active search patterns.
                                                         </TableCell>
                                                     </TableRow>
