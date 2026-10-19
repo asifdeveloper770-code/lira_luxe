@@ -1,10 +1,6 @@
-import { createFileRoute } from "react-router-dom";
+import { useEffect } from "react";
 import { SectionLabel } from "@/components/Reveal";
 
-export const Route = createFileRoute("/faq")({
-  head: () => ({ meta: [{ title: "FAQ — Lira Fashion" }] }),
-  component: FAQ,
-});
 
 const items = [
   { q: "How long does a custom engraving take?", a: "Engraving adds 3–5 atelier days to your order. It is offered complimentary on every piece." },
@@ -15,6 +11,9 @@ const items = [
 ];
 
 function FAQ() {
+  useEffect(() => {
+    document.title = "FAQ — Lira Fashion";
+  }, []);
   return (
     <div className="pt-32 pb-24 container-luxe max-w-3xl">
       <div className="text-center">
