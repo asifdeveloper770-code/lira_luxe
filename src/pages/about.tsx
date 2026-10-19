@@ -10,17 +10,18 @@ export default function About() {
         <img
           src={hero}
           alt="Maison Lira"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover brightness-[1.35] contrast-[1.05] saturate-[1.1]"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/30 to-ink" />
+        {/* Lighter overlay (client asked to brighten this image) — only a soft fade at the top for the menu and at the bottom into the page */}
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/35 via-transparent to-ink/80" />
 
         <div className="relative container-luxe h-full flex flex-col items-center justify-center text-center pt-20">
           <SectionLabel>
             Maison Lira · Est. 1924
           </SectionLabel>
 
-          <h1 className="mt-6 font-serif text-5xl md:text-7xl max-w-3xl">
+          <h1 className="mt-6 font-serif text-5xl md:text-7xl max-w-3xl [text-shadow:0_2px_24px_rgba(0,0,0,0.6)]">
             A century of{" "}
             <em className="italic gradient-gold-text">
               savoir-faire
@@ -29,7 +30,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="container-luxe py-28 grid lg:grid-cols-12 gap-12 items-center">
+      <section id="story" className="container-luxe py-28 grid lg:grid-cols-12 gap-12 items-center scroll-mt-28">
         <Reveal className="lg:col-span-6">
           <img
             src={story}
@@ -61,6 +62,43 @@ export default function About() {
             We choose patience over
             production.
           </p>
+        </Reveal>
+      </section>
+
+      <section id="craftsmanship" className="container-luxe py-20 border-t border-border scroll-mt-28">
+        <Reveal className="max-w-3xl mx-auto text-center space-y-5 text-foreground/75 leading-relaxed">
+          <SectionLabel>Craftsmanship</SectionLabel>
+          <h2 className="font-serif text-4xl md:text-5xl text-foreground">
+            Made by <em className="italic gradient-gold-text">hand</em>
+          </h2>
+          <p>
+            Every piece is handmade &amp; designed by Lira Fashion — beads strung, wires wrapped and
+            details painted one at a time. Because each item is handcrafted, colours, shapes and sizes
+            may vary slightly, making every piece one of a kind.
+          </p>
+        </Reveal>
+      </section>
+
+      <section id="sustainability" className="container-luxe py-20 border-t border-border scroll-mt-28">
+        <Reveal className="max-w-3xl mx-auto text-center space-y-5 text-foreground/75 leading-relaxed">
+          <SectionLabel>Sustainability</SectionLabel>
+          <h2 className="font-serif text-4xl md:text-5xl text-foreground">
+            Natural <em className="italic gradient-gold-text">materials</em>
+          </h2>
+          <p>
+            We work with natural materials wherever we can — shell, coconut, wood, leather and natural
+            stones — and make in small batches, so nothing is mass-produced and little goes to waste.
+          </p>
+        </Reveal>
+      </section>
+
+      <section id="journal" className="container-luxe py-20 border-t border-border scroll-mt-28">
+        <Reveal className="max-w-3xl mx-auto text-center space-y-5 text-foreground/75 leading-relaxed">
+          <SectionLabel>Journal</SectionLabel>
+          <h2 className="font-serif text-4xl md:text-5xl text-foreground">
+            From the <em className="italic gradient-gold-text">atelier</em>
+          </h2>
+          <p>New pieces, behind-the-scenes and styling notes — coming soon.</p>
         </Reveal>
       </section>
 
