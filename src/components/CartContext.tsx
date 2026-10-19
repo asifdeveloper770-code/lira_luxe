@@ -11,7 +11,13 @@ export interface CartItem {
   image: string;
   price: number;
   quantity: number;
+  /** Chosen size (rings). Items with a different size are separate cart lines. */
+  size?: string;
 }
+
+// Same piece in two sizes = two cart lines, so the cart line id includes the size
+const lineId = (productId: string, size?: string) =>
+  size ? `${productId}::size-${size}` : productId;
 
 interface CartContextType {
   cart: CartItem[];
@@ -45,23 +51,18 @@ export function CartProvider({
   }, [cart]);
 
   const addToCart = (product: CartItem) => {
+    const id = lineId(product.id, product.size);
+    const qty = Math.max(1, Number(product.quantity) || 1);
     setCart((prev) => {
-      const existing = prev.find(
-        (item) => item.id === product.id
-      );
+      const existing = prev.find((item) => item.id === id);
 
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
-            : item
+          item.id === id ? { ...item, quantity: item.quantity + qty } : item
         );
       }
 
-      return [...prev, product];
+      return [...prev, { ...product, id, quantity: qty }];
     });
   };
 
