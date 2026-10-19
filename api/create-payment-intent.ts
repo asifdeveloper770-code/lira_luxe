@@ -146,6 +146,11 @@ export default async function handler(
         customer_city: customer.city || "",
         customer_country: customer.country || "",
         customer_zip: customer.zip || "",
+        // What was ordered (incl. ring size) so it shows on the payment in Stripe
+        items: cart
+          .map((i: any) => `${i.quantity}x ${i.name}${i.size ? ` (Size ${i.size})` : ""}`)
+          .join("; ")
+          .slice(0, 500),
       },
       shipping:
         customer.name && customer.address
