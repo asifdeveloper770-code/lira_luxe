@@ -66,7 +66,7 @@ export default async function handler(
           currency: "usd",
           unit_amount: Math.round(Number(item.price) * 100),
           product_data: {
-            name: item.name || "Maison Lira Piece",
+            name: `${item.name || "Maison Lira Piece"}${item.size ? ` — Size ${item.size}` : ""}`,
             ...(isValidHttpUrl ? { images: [item.image] } : {}),
           },
         },
