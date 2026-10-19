@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { useSiteImages } from "@/lib/site-images";
 import { collections, defaultProducts } from "@/lib/products";
 
-import ProductCard from "../components/ProductCard";
+import ProductCard, { type Product } from "../components/ProductCard";
+import { sortBySku } from "@/lib/catalog";
 import { Reveal, SectionLabel } from "../components/Reveal";
 
 interface Category {
@@ -15,17 +16,6 @@ interface Category {
   tagline?: string;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  tag?: string;
-  category_id: string;
-  categories: {
-    name: string;
-  };
-}
 
 export default function CollectionPage() {
   const { slug } = useParams();
@@ -71,7 +61,7 @@ export default function CollectionPage() {
           .eq("category_id", category.id);
 
         if (!productError && productData && productData.length > 0) {
-          setProducts(productData);
+          setProducts(sortBySku(productData));
           setLoading(false);
           return;
         }
@@ -168,7 +158,7 @@ export default function CollectionPage() {
       <section className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10">
 
         {products.map((product, index) => (
-          <Reveal key={product.id} delay={index * 70}>
+          <Reveal key={product.id} delay={(index % 4) * 70}>
             <ProductCard product={product} />
           </Reveal>
         ))}
