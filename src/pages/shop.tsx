@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { defaultCategories, defaultProducts } from "@/lib/products";
-import ProductCard from "../components/ProductCard";
+import ProductCard, { type Product } from "../components/ProductCard";
+import { sortBySku } from "@/lib/catalog";
 import { Reveal, SectionLabel } from "../components/Reveal";
 
 export default function ShopPage() {
@@ -10,17 +11,6 @@ export default function ShopPage() {
     name: string;
   }
 
-  interface Product {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    tag?: string;
-    category_id: string;
-    categories: {
-      name: string;
-    };
-  }
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -48,7 +38,7 @@ export default function ShopPage() {
         return;
       }
 
-      setProducts(data);
+      setProducts(sortBySku(data));
     } catch {
       setProducts(defaultProducts as any);
     }
@@ -126,8 +116,9 @@ export default function ShopPage() {
 
       {/* PRODUCTS */}
       <section className="container-luxe mt-16 grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10">
+        {/* Stagger only within a row — with 300+ items, i*60ms kept items far down the page invisible for 10–20 seconds */}
         {filteredProducts.map((p, i) => (
-          <Reveal key={p.id} delay={i * 60}>
+          <Reveal key={p.id} delay={(i % 4) * 60}>
             <ProductCard product={p} />
           </Reveal>
         ))}
